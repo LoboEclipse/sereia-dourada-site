@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "webVersion": "1.0.0",
+  "releaseNotes": "Sereia Dourada Smart TV estilo Mercado (Ofertas do Dia, Tabela de Preços, Painel de Senhas) para Android TV (.apk), Samsung Tizen (.wgt), LG webOS (.ipk) e Web TV.",
+  "apkUrl": "https://github.com/LoboEclipse/sereia-dourada-site/releases/download/smarttv-v1.0.0/SereiaDourada-SmartTV-v1.0.0.apk",
+  "tizenWgtUrl": "https://github.com/LoboEclipse/sereia-dourada-site/releases/download/smarttv-v1.0.0/SereiaDourada-Samsung-Tizen-v1.0.0.wgt",
+  "webosIpkUrl": "https://github.com/LoboEclipse/sereia-dourada-site/releases/download/smarttv-v1.0.0/com.sereiadourada.smarttv_1.0.0_all.ipk",
+  "webTvUrl": "https://loboeclipse.github.io/sereia-dourada-site/tv/",
+  "downloadUrl": "https://github.com/LoboEclipse/sereia-dourada-site/releases/tag/smarttv-v1.0.0"
+}

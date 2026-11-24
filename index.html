@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Sereia Dourada</title>
+  <meta name="description" content="Sereia Dourada - Tema de alto luxo com ouro metálico e azul profundo.">
+  <link rel="icon" type="image/png" href="/sereia-dourada-site/assets/logo.png">
+
+  <!-- Progressive Web App (PWA) -->
+  <link rel="manifest" href="/sereia-dourada-site/manifest.json">
+  <meta name="theme-color" content="#050C1A">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sereia Dourada">
+  <link rel="apple-touch-icon" href="/sereia-dourada-site/assets/logo.png">
+
+  <!-- Google Fonts: Cinzel & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="/sereia-dourada-site/css/styles.css?v=6">
+  <!-- Prevenção imediata de FOUC / flash de botões para usuários autenticados -->
+  <script>
+    (function() {
+      try {
+        var hasSess = localStorage.getItem('sereia_auth_session');
+        if (!hasSess) {
+          for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (k && k.indexOf('firebase:authUser:') === 0) { hasSess = true; break; }
+          }
+        }
+        if (hasSess) document.documentElement.classList.add('auth-session-active');
+      } catch(e) {}
+    })();
+  </script>
+</head>
+
+<body>
+  <!-- Canvas de Partículas Douradas -->
+  <canvas id="particles-canvas"></canvas>
+
+  <!-- Barra de Cima (Header) -->
+  <header class="site-header" id="site-header">
+    <div class="header-inner">
+      <!-- Canto Esquerdo: Logo e Nome -->
+      <a href="/sereia-dourada-site/" class="brand-logo" id="header-logo">
+        <div class="logo-badge-mini">
+          <img src="/sereia-dourada-site/assets/logo.png" alt="Sereia Dourada Logotipo Oficial" class="nav-logo-img">
+        </div>
+        <div class="brand-text">
+          <span class="brand-title-top gold-gradient-text">SEREIA</span>
+          <span class="brand-title-bottom gold-gradient-text">DOURADA</span>
+        </div>
+      </a>
+
+      <!-- Meio da Barra: Links Centrais com URLs Profissionais -->
+      <nav class="nav-center-wrap">
+        <ul class="nav-center">
+          <li><a href="/sereia-dourada-site/" class="nav-link active">Inicial</a></li>
+          <li><a href="/sereia-dourada-site/reserva" class="nav-link">Reserva</a></li>
+          <li><a href="/sereia-dourada-site/cardapio" class="nav-link">Cardápio</a></li>
+          <li><a href="/sereia-dourada-site/parceiros" class="nav-link">Parceiros</a></li>
+          <li><a href="/sereia-dourada-site/suporte" class="nav-link">Suporte</a></li>
+        </ul>
+      </nav>
+
+      <!-- Canto Direito: Ações & Menu Mobile -->
+      <div class="header-right-wrap">
+        <div class="header-actions">
+          <script>
+            (function() {
+              var parent = document.currentScript.parentElement;
+              var sess = null;
+              try {
+                sess = JSON.parse(localStorage.getItem('sereia_auth_session'));
+                if (!sess || !sess.uid) {
+                  for (var i = 0; i < localStorage.length; i++) {
+                    var k = localStorage.key(i);
+                    if (k && k.indexOf('firebase:authUser:') === 0) {
+                      var fb = JSON.parse(localStorage.getItem(k));
+                      if (fb && fb.uid) {
+                        var cName = localStorage.getItem('sereia_vip_nome_' + fb.uid) || fb.displayName || (fb.email ? fb.email.split('@')[0] : 'CLIENTE');
+                        var pNome = cName.trim().split(/\s+/)[0].toUpperCase();
+                        var cFoto = localStorage.getItem('sereia_vip_foto_' + fb.uid) || fb.photoURL || '';
+                        sess = { uid: fb.uid, nome: cName, primeiroNome: pNome, foto: cFoto };
+                        break;
+                      }
+                    }
+                  }
+                }
+              } catch(e) {}
+
+              if (sess && sess.uid) {
+                var avatar = sess.foto ? '<img src="' + sess.foto + '" alt="Foto de perfil">' : '<span style="font-size: 1rem;">👑</span>';
+                parent.innerHTML = 
+                  '<div class="header-user-actions-group">' +
+                    '<div class="notif-menu-container" id="notif-menu-container">' +
+                      '<button class="notif-bell-btn" id="notif-bell-btn" type="button" aria-expanded="false" title="Notificações">' +
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                          '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>' +
+                          '<path d="M13.73 21a2 2 0 0 1-3.46 0"></path>' +
+                        '</svg>' +
+                        '<span class="notif-badge-count" id="notif-badge-count" style="display: none;">0</span>' +
+                      '</button>' +
+                    '</div>' +
+                    '<div class="user-menu-container" id="user-menu-container">' +
+                      '<button class="user-menu-trigger" id="user-menu-trigger" type="button" aria-expanded="false" title="Menu da Conta">' +
+                        '<span class="user-menu-name" id="header-user-display-name">' + (sess.primeiroNome || 'CLIENTE') + '</span>' +
+                        '<span class="user-menu-avatar" id="header-avatar-wrap">' + avatar + '</span>' +
+                        '<span class="user-menu-chevron" id="user-menu-chevron">' +
+                          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+                            '<polyline points="6 9 12 15 18 9"></polyline>' +
+                          '</svg>' +
+                        '</span>' +
+                      '</button>' +
+                    '</div>' +
+                  '</div>';
+              } else {
+                parent.innerHTML = 
+                  '<button class="btn-auth-login" id="btn-login" type="button">Entrar</button>';
+              }
+            })();
+          </script>
+          <noscript>
+            <button class="btn-auth-login" id="btn-login" type="button">Entrar</button>
+          </noscript>
+        </div>
+
+        <!-- Botão Hamburger Mobile -->
+        <button class="mobile-hamburger-btn" id="mobile-hamburger-btn" aria-label="Abrir Menu" type="button" aria-expanded="false">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Menu Lateral Off-Canvas Mobile -->
+  <div class="mobile-nav-drawer" id="mobile-nav-drawer" aria-hidden="true">
+    <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
+    <div class="mobile-drawer-content">
+      <div class="mobile-drawer-header">
+        <div class="brand-text">
+          <span class="brand-title-top gold-gradient-text">SEREIA</span>
+          <span class="brand-title-bottom gold-gradient-text">DOURADA</span>
+        </div>
+        <button class="mobile-drawer-close" id="mobile-drawer-close" type="button" aria-label="Fechar">&times;</button>
+      </div>
+      <ul class="mobile-nav-links">
+        <li><a href="/sereia-dourada-site/" class="mobile-nav-link active"><span>🏡</span> Inicial</a></li>
+        <li><a href="/sereia-dourada-site/reserva" class="mobile-nav-link"><span>📅</span> Reserva</a></li>
+        <li><a href="/sereia-dourada-site/cardapio" class="mobile-nav-link"><span>🍽️</span> Cardápio</a></li>
+        <li><a href="/sereia-dourada-site/parceiros" class="mobile-nav-link"><span>🤝</span> Parceiros</a></li>
+        <li><a href="/sereia-dourada-site/suporte" class="mobile-nav-link"><span>💬</span> Suporte</a></li>
+      </ul>
+      <div class="mobile-drawer-footer">
+        <button class="btn-pwa-install" id="btn-pwa-install-mobile" style="display: none;" type="button">
+          <span>📲</span> Instalar Aplicativo
+        </button>
+        <p class="mobile-drawer-copy">© 2026 Sereia Dourada. Resort & Gastronomia.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conteúdo Principal com Hero Imperial -->
+  <main class="main-content">
+    <div class="container hero-container">
+      <div class="hero-content">
+        <div class="luxury-badge">
+          <span class="badge-dot">✦</span>
+          <span>POUSADA / CAMPING / RESTAURANTE</span>
+          <span class="badge-dot">✦</span>
+        </div>
+
+        <h1 class="hero-title">
+          POUSADA, CAMPING & <span class="gold-gradient-text">RESTAURANTE EXCLUSIVO</span>
+        </h1>
+
+        <p class="hero-description">
+          Desfrute de momentos únicos na Sereia Dourada. Oferecemos quartos aconchegantes e confortáveis, área exclusiva
+          de camping em meio à natureza e o melhor da gastronomia em nosso restaurante, unindo lazer, tranquilidade e
+          hospitalidade.
+        </p>
+
+        <div class="hero-cta-group">
+          <a href="/sereia-dourada-site/reserva" class="btn-hero-primary" id="hero-book-btn">FAZER UMA RESERVA</a>
+          <a href="/sereia-dourada-site/cardapio" class="btn-hero-outline">CARDÁPIO & EXPERIÊNCIAS</a>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="hero-logo-frame" id="hero-logo-tilt">
+          <div class="logo-halo"></div>
+          <div class="logo-inner-wrapper">
+            <img src="/sereia-dourada-site/assets/logo.png" alt="Logotipo Oficial Sereia Dourada" class="hero-logo-img">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Painel de Destaques: Pousada, Camping e Restaurante -->
+    <section class="spaces-panel" id="espacos-panel">
+      <div class="spaces-header">
+        <div class="luxury-badge" style="margin-bottom: 14px;">
+          <span class="badge-dot">✦</span>
+          <span>EXPERIÊNCIAS SEREIA DOURADA</span>
+          <span class="badge-dot">✦</span>
+        </div>
+        <h2 class="spaces-title">
+          CONHEÇA NOSSOS <span class="gold-gradient-text">ESPAÇOS</span>
+        </h2>
+        <p class="spaces-subtitle">
+          Um refúgio exclusivo que harmoniza o aconchego da pousada, a liberdade do camping e o requinte da alta
+          gastronomia.
+        </p>
+      </div>
+
+      <div class="spaces-grid">
+        <!-- Card 1: Pousada -->
+        <article class="space-card">
+          <div class="space-card-img-wrap">
+            <img src="/sereia-dourada-site/assets/pousada.jpg" alt="Pousada Sereia Dourada" class="space-card-img" loading="lazy">
+            <span class="space-card-badge">Pousada</span>
+          </div>
+          <div class="space-card-body">
+            <div class="space-card-meta">
+              <span class="meta-icon">🏡</span>
+              <span class="meta-text">Hospedagem de Charme</span>
+            </div>
+            <h3 class="space-card-title">Quartos Aconchegantes</h3>
+            <p class="space-card-desc">
+              Quartos confortáveis e acolhedores com arquitetura rústica refinada, iluminação intimista e total
+              integração com a natureza ao redor.
+            </p>
+            <div class="space-card-footer">
+              <button class="btn-space-action btn-open-space-modal" data-space="pousada" type="button">VER
+                INFORMAÇÕES</button>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 2: Camping -->
+        <article class="space-card">
+          <div class="space-card-img-wrap">
+            <img src="/sereia-dourada-site/assets/camping.jpg" alt="Área de Camping Sereia Dourada" class="space-card-img" loading="lazy">
+            <span class="space-card-badge">Camping</span>
+          </div>
+          <div class="space-card-body">
+            <div class="space-card-meta">
+              <span class="meta-icon">⛺</span>
+              <span class="meta-text">Contato com a Natureza</span>
+            </div>
+            <h3 class="space-card-title">Área de Camping</h3>
+            <p class="space-card-desc">
+              Espaço arborizado e seguro para acampar sob um céu estrelado. Viva a liberdade ao ar livre com estrutura
+              de apoio completa e fogueiras ao entardecer.
+            </p>
+            <div class="space-card-footer">
+              <button class="btn-space-action btn-open-space-modal" data-space="camping" type="button">VER
+                INFORMAÇÕES</button>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 3: Restaurante -->
+        <article class="space-card">
+          <div class="space-card-img-wrap">
+            <img src="/sereia-dourada-site/assets/restaurante.jpg" alt="Restaurante Sereia Dourada" class="space-card-img" loading="lazy">
+            <span class="space-card-badge">Restaurante</span>
+          </div>
+          <div class="space-card-body">
+            <div class="space-card-meta">
+              <span class="meta-icon">🍽️</span>
+              <span class="meta-text">Alta Gastronomia</span>
+            </div>
+            <h3 class="space-card-title">Restaurante Exclusivo</h3>
+            <p class="space-card-desc">
+              Culinária autoral e afetiva em ambiente acolhedor. Pratos especiais, drinks artesanais e vinhos
+              selecionados para celebrar os melhores momentos.
+            </p>
+            <div class="space-card-footer">
+              <button class="btn-space-action btn-open-space-modal" data-space="restaurante" type="button">VER
+                INFORMAÇÕES</button>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Esteira de Avaliações Contínua (Da Direita para a Esquerda) -->
+    <section class="reviews-section" id="avaliacoes-esteira">
+      <div class="reviews-header">
+        <div class="luxury-badge" style="margin-bottom: 12px;">
+          <span class="badge-dot">✦</span>
+          <span>OPINIÃO DE QUEM JÁ VIVEU O SONHO</span>
+          <span class="badge-dot">✦</span>
+        </div>
+        <h2 class="spaces-title" style="font-size: 2.1rem;">
+          AVALIAÇÕES & <span class="gold-gradient-text">EXPERIÊNCIAS REAIS</span>
+        </h2>
+        <p class="spaces-subtitle" style="max-width: 600px; margin: 0 auto;">
+          Depoimentos de hóspedes e clientes que desfrutaram do aconchego da nossa pousada, a energia do camping e a alta gastronomia do restaurante.
+        </p>
+        <div style="margin-top: 22px;">
+          <button class="btn-gold-action" id="btn-abrir-modal-avaliacao" type="button" style="padding: 12px 30px; font-size: 0.92rem; border-radius: 30px; box-shadow: 0 4px 22px rgba(212,175,55,0.4); cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+            <span>✦</span> DEIXAR MINHA AVALIAÇÃO <span>✦</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="reviews-marquee-container">
+        <div class="reviews-marquee-track" id="reviews-marquee-track">
+          <!-- Item 1 -->
+          <div class="review-card">
+            <div class="review-card-top">
+              <div class="review-avatar">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" alt="Camila Albuquerque" onerror="this.parentElement.innerHTML='👑';">
+              </div>
+              <div class="review-user-info">
+                <span class="review-user-name">Camila Albuquerque</span>
+                <span class="review-user-badge">Hóspede VIP</span>
+              </div>
+              <span class="review-stars">★★★★★</span>
+            </div>
+            <p class="review-card-text">
+              "Os quartos da pousada são um verdadeiro refúgio. O aroma amadeirado, os lençóis de puro algodão e o silêncio da noite proporcionam um descanso impecável. Voltarei com certeza!"
+            </p>
+            <div class="review-space-badge-img">
+              <span class="review-space-icon">🏡</span>
+              <span class="review-space-name">Pousada & Suítes</span>
+            </div>
+          </div>
+
+          <!-- Item 2 -->
+          <div class="review-card">
+            <div class="review-card-top">
+              <div class="review-avatar">
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" alt="Marcelo Silveira" onerror="this.parentElement.innerHTML='👑';">
+              </div>
+              <div class="review-user-info">
+                <span class="review-user-name">Marcelo Silveira</span>
+                <span class="review-user-badge">Aventureiro VIP</span>
+              </div>
+              <span class="review-stars">★★★★★</span>
+            </div>
+            <p class="review-card-text">
+              "A estrutura de camping superou todas as expectativas. Banheiros limpos, segurança 24h e um céu incrivelmente estrelado ao redor da fogueira ao entardecer. Experiência mágica!"
+            </p>
+            <div class="review-space-badge-img">
+              <span class="review-space-icon">⛺</span>
+              <span class="review-space-name">Área de Camping</span>
+            </div>
+          </div>
+
+          <!-- Item 3 -->
+          <div class="review-card">
+            <div class="review-card-top">
+              <div class="review-avatar">
+                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80" alt="Renata Vasconcellos" onerror="this.parentElement.innerHTML='👑';">
+              </div>
+              <div class="review-user-info">
+                <span class="review-user-name">Renata Vasconcellos</span>
+                <span class="review-user-badge">Cliente Frequente</span>
+              </div>
+              <span class="review-stars">★★★★★</span>
+            </div>
+            <p class="review-card-text">
+              "O Robalo Imperial e o risoto de camarão servidos no restaurante foram os melhores pratos que provei este ano. Carta de vinhos selecionada e atendimento digno da realeza!"
+            </p>
+            <div class="review-space-badge-img">
+              <span class="review-space-icon">🍽️</span>
+              <span class="review-space-name">Restaurante Exclusivo</span>
+            </div>
+          </div>
+
+          <!-- Item 4 -->
+          <div class="review-card">
+            <div class="review-card-top">
+              <div class="review-avatar">
+                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" alt="Eduardo Fontes" onerror="this.parentElement.innerHTML='👑';">
+              </div>
+              <div class="review-user-info">
+                <span class="review-user-name">Eduardo Fontes</span>
+                <span class="review-user-badge">Casal Hóspede</span>
+              </div>
+              <span class="review-stars">★★★★★</span>
+            </div>
+            <p class="review-card-text">
+              "Comemoramos nosso aniversário de casamento na Sereia Dourada e foi tudo memorável. Café da manhã farto com vista panorâmica e o carinho da equipe em cada detalhe."
+            </p>
+            <div class="review-space-badge-img">
+              <span class="review-space-icon">🏡</span>
+              <span class="review-space-name">Pousada & Suítes</span>
+            </div>
+          </div>
+
+          <!-- Item 5 -->
+          <div class="review-card">
+            <div class="review-card-top">
+              <div class="review-avatar">
+                <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80" alt="Juliana Castro" onerror="this.parentElement.innerHTML='👑';">
+              </div>
+              <div class="review-user-info">
+                <span class="review-user-name">Juliana Castro</span>
+                <span class="review-user-badge">Hóspede Glamping</span>
+              </div>
+              <span class="review-stars">★★★★★</span>
+            </div>
+            <p class="review-card-text">
+              "O atendimento via WhatsApp foi ágil e personalizado desde a reserva até o check-out. Cada canto desse lugar transmite paz, harmonia com a natureza e sofisticação."
+            </p>
+            <div class="review-space-badge-img">
+              <span class="review-space-icon">⛺</span>
+              <span class="review-space-name">Camping & Glamping</span>
+            </div>
+          </div>
+
+          <!-- DUPLICADOS PARA LOOP INFINITO PERFEITO (TRANSLATE -50%) -->
+          <!-- Item 1 (Dup) -->
+          <div class="review-card" aria-hidden="true">
+            <div class="review-card-top">
+              <div class="review-avatar">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80" alt="Camila Albuquerque" onerror="this.parentElement.innerHTML='👑';">
+              </div>
+              <div class="review-user-info">
+                <span class="review-user-name">Camila Albuquerque</span>
+                <span class="review-user-badge">Hóspede VIP</span>
+              </div>
+              <span class="review-stars">★★★★★</span>
+            </div>
+            <p class="review-card-text">
+              "Os quartos da pousada são um verdadeiro refúgio. O aroma amadeirado, os lençóis de puro algodão e o silêncio da noite proporcionam um descanso impecável. Voltarei com certeza!"
+            </p>
+            <div class="review-space-badge-img">
+              <span class="review-space-icon">🏡</span>
+              <span class="review-space-name">Pousada & Suítes</span>
+            </div>
+          </div>
+
+          <!-- Item 2 (Dup) -->
+          <div class="review-card" aria-hidden="true">
+            <div class="review-card-top">
+              <div class="review-avatar">
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" alt="Marcelo Silveira" onerror="this.parentElement.innerHTML='👑';">
+              </div>
+              <div class="review-user-info">
+                <span class="review-user-name">Marcelo Silveira</span>
+                <span class="review-user-badge">Aventureiro VIP</span>
+              </div>
+              <span class="review-stars">★★★★★</span>
+            </div>
+            <p class="review-card-text">
+              "A estrutura de camping superou todas as expectativas. Banheiros limpos, segurança 24h e um céu incrivelmente estrelado ao redor da fogueira ao entardecer. Experiência mágica!"
+            </p>
+            <div class="review-space-badge-img">
+              <span class="review-space-icon">⛺</span>
+              <span class="review-space-name">Área de Camping</span>
+            </div>
+          </div>
+
+          <!-- Item 3 (Dup) -->
+          <div class="review-card" aria-hidden="true">
+            <div class="review-card-top">
+              <div class="review-avatar">
+                <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80" alt="Renata Vasconcellos" onerror="this.parentElement.innerHTML='👑';">
+              </div>
+              <div class="review-user-info">
+                <span class="review-user-name">Renata Vasconcellos</span>
+                <span class="review-user-badge">Cliente Frequente</span>
+              </div>
+              <span class="review-stars">★★★★★</span>
+            </div>
+            <p class="review-card-text">
+              "O Robalo Imperial e o risoto de camarão servidos no restaurante foram os melhores pratos que provei este ano. Carta de vinhos selecionada e atendimento digno da realeza!"
+            </p>
+            <div class="review-space-badge-img">
+              <span class="review-space-icon">🍽️</span>
+              <span class="review-space-name">Restaurante Exclusivo</span>
+            </div>
+          </div>
+
+          <!-- Item 4 (Dup) -->
+          <div class="review-card" aria-hidden="true">
+            <div class="review-card-top">
+              <div class="review-avatar">
+                <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80" alt="Eduardo Fontes" onerror="this.parentElement.innerHTML='👑';">
+              </div>
+              <div class="review-user-info">
+                <span class="review-user-name">Eduardo Fontes</span>
+                <span class="review-user-badge">Casal Hóspede</span>
+              </div>
+              <span class="review-stars">★★★★★</span>
+            </div>
+            <p class="review-card-text">
+              "Comemoramos nosso aniversário de casamento na Sereia Dourada e foi tudo memorável. Café da manhã farto com vista panorâmica e o carinho da equipe em cada detalhe."
+            </p>
+            <div class="review-space-badge-img">
+              <span class="review-space-icon">🏡</span>
+              <span class="review-space-name">Pousada & Suítes</span>
+            </div>
+          </div>
+
+          <!-- Item 5 (Dup) -->
+          <div class="review-card" aria-hidden="true">
+            <div class="review-card-top">
+              <div class="review-avatar">
+                <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80" alt="Juliana Castro" onerror="this.parentElement.innerHTML='👑';">
+              </div>
+              <div class="review-user-info">
+                <span class="review-user-name">Juliana Castro</span>
+                <span class="review-user-badge">Hóspede Glamping</span>
+              </div>
+              <span class="review-stars">★★★★★</span>
+            </div>
+            <p class="review-card-text">
+              "O atendimento via WhatsApp foi ágil e personalizado desde a reserva até o check-out. Cada canto desse lugar transmite paz, harmonia com a natureza e sofisticação."
+            </p>
+            <div class="review-space-badge-img">
+              <span class="review-space-icon">⛺</span>
+              <span class="review-space-name">Camping & Glamping</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Rodapé (Footer) -->
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <div class="footer-clean-wrapper">
+        <div class="footer-brand-clean">
+          <img src="/sereia-dourada-site/assets/logo.png" alt="Sereia Dourada" class="footer-logo-img">
+          <span class="footer-brand-title">SEREIA DOURADA</span>
+        </div>
+        <p class="footer-copy">© 2026 Sereia Dourada. Todos os direitos reservados.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal de Informações dos Espaços (Pousada, Camping e Restaurante) -->
+  <div class="modal-overlay" id="space-info-modal" aria-hidden="true">
+    <div class="info-modal-card">
+      <button class="modal-close" id="space-info-close-btn" aria-label="Fechar">&times;</button>
+
+      <div class="info-modal-img-wrap">
+        <img id="modal-space-img" src="/sereia-dourada-site/assets/pousada.jpg" alt="Espaço Sereia Dourada" class="info-modal-img">
+        <div class="info-modal-img-overlay"></div>
+        <span id="modal-space-badge" class="info-modal-badge">Pousada</span>
+      </div>
+
+      <div class="info-modal-body">
+        <div class="info-modal-meta">
+          <span id="modal-space-icon" class="meta-icon">🏡</span>
+          <span id="modal-space-category" class="meta-text">Hospedagem de Charme</span>
+        </div>
+
+        <h3 id="modal-space-title" class="info-modal-title">Quartos Aconchegantes</h3>
+
+        <p id="modal-space-desc" class="info-modal-desc">
+          Quartos confortáveis e acolhedores com arquitetura rústica refinada, iluminação intimista e total integração
+          com a natureza ao redor.
+        </p>
+
+        <div class="gold-divider" style="margin: 20px 0 16px 0;">
+          <span class="divider-line"></span>
+          <span class="divider-icon">⚜</span>
+          <span class="divider-line"></span>
+        </div>
+
+        <div class="info-modal-details">
+          <h4 class="info-details-heading">Destaques & Comodidades</h4>
+          <ul id="modal-space-list" class="info-features-list">
+            <!-- Itens inseridos dinamicamente -->
+          </ul>
+        </div>
+
+        <div class="info-modal-footer">
+          <button id="modal-space-cta" class="btn-modal-action" type="button">
+            FAZER UMA RESERVA
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Interativo Entrar / Registrar-se -->
+  <div class="modal-overlay" id="auth-modal" aria-hidden="true">
+    <div class="auth-modal-card">
+      <button class="modal-close" id="auth-close-btn">&times;</button>
+      <div class="logo-badge-mini" style="margin: 0 auto 12px auto;">
+        <img src="/sereia-dourada-site/assets/logo.png" alt="Sereia Dourada" class="nav-logo-img">
+      </div>
+      <h3 class="gold-gradient-text" style="font-family: var(--font-serif); font-size: 1.3rem;">ÁREA EXCLUSIVA</h3>
+
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="tab-login-btn">Entrar</button>
+        <button class="auth-tab-btn" id="tab-register-btn">Registrar-se</button>
+      </div>
+
+      <!-- Formulário de Login -->
+      <form class="auth-form" id="form-login" onsubmit="return false;">
+        <div class="form-group">
+          <label for="login-email">E-mail ou Usuário</label>
+          <input type="email" id="login-email" placeholder="seuemail@exemplo.com" required>
+        </div>
+        <div class="form-group">
+          <label for="login-password">Senha Secreta</label>
+          <div class="password-input-wrap">
+            <input type="password" id="login-password" placeholder="••••••••" required>
+            <button type="button" class="btn-toggle-password" data-target="login-password" aria-label="Mostrar ou ocultar senha" title="Ver senha">
+              <svg class="eye-icon-show" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg class="eye-icon-hide" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn-auth-submit">Acessar Conta</button>
+      </form>
+
+      <!-- Formulário de Registro -->
+      <form class="auth-form" id="form-register" style="display: none;" onsubmit="return false;">
+        <div class="form-group">
+          <label for="reg-name">Nome Completo</label>
+          <input type="text" id="reg-name" placeholder="Seu nome completo" required>
+        </div>
+        <div class="form-group">
+          <label for="reg-email">E-mail Oficial</label>
+          <input type="email" id="reg-email" placeholder="contato@exemplo.com" required>
+        </div>
+        <div class="form-group">
+          <label for="reg-password">Criar Senha Segura</label>
+          <div class="password-input-wrap">
+            <input type="password" id="reg-password" placeholder="••••••••" required>
+            <button type="button" class="btn-toggle-password" data-target="reg-password" aria-label="Mostrar ou ocultar senha" title="Ver senha">
+              <svg class="eye-icon-show" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg class="eye-icon-hide" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn-auth-submit">Criar Minha Conta</button>
+      </form>
+      <!-- Login Social (Google e Facebook) -->
+      <div class="auth-social-wrap" id="auth-social-wrap">
+        <div class="auth-social-divider"><span>ou continue com</span></div>
+        <div class="auth-social-buttons">
+          <button type="button" class="btn-social-auth btn-social-google" id="btn-login-google">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#EA4335" d="M12 10.2v3.9h5.4c-.2 1.3-1.5 3.8-5.4 3.8-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.7 3.3 14.6 2.4 12 2.4 6.7 2.4 2.4 6.7 2.4 12s4.3 9.6 9.6 9.6c5.5 0 9.2-3.9 9.2-9.4 0-.6-.1-1.1-.2-1.6H12z"/>
+              <path fill="#4285F4" d="M21.2 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4c-.3 1.3-1 2.4-2.2 3.1l3.4 2.6c2-1.8 2.6-4.5 2.6-7.6z"/>
+              <path fill="#FBBC05" d="M6.7 14.4c-.2-.7-.4-1.5-.4-2.4s.2-1.7.4-2.4L3.5 7.1C2.8 8.6 2.4 10.2 2.4 12s.4 3.4 1.1 4.9l3.2-2.5z"/>
+              <path fill="#34A853" d="M12 21.6c2.6 0 4.8-.9 6.4-2.4l-3.4-2.6c-.9.6-2 .9-3 .9-2.4 0-4.4-1.6-5.1-3.8l-3.2 2.5C5.2 19.4 8.3 21.6 12 21.6z"/>
+            </svg>
+            <span>Google</span>
+          </button>
+          <button type="button" class="btn-social-auth btn-social-facebook" id="btn-login-facebook">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#1877F2" d="M24 12.07C24 5.41 18.63 0 12 0S0 5.41 0 12.07c0 6.02 4.39 11.01 10.13 11.93v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.96h-1.51c-1.49 0-1.95.93-1.95 1.88v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.08 24 18.09 24 12.07z"/>
+            </svg>
+            <span>Facebook</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Interativo Deixar Avaliação -->
+  <div class="modal-overlay" id="modal-avaliacao" aria-hidden="true">
+    <div class="auth-modal-card" style="max-width: 520px; width: 92%; max-height: 90vh; overflow-y: auto;">
+      <button class="modal-close" id="btn-close-modal-avaliacao" type="button" aria-label="Fechar">&times;</button>
+      <div class="logo-badge-mini" style="margin: 0 auto 10px auto;">
+        <img src="/sereia-dourada-site/assets/logo.png" alt="Sereia Dourada" class="nav-logo-img">
+      </div>
+      <h3 class="gold-gradient-text" style="font-family: var(--font-serif); font-size: 1.35rem; text-align: center; margin-bottom: 6px;">
+        SUA EXPERIÊNCIA
+      </h3>
+      <p style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 20px;">
+        Compartilhe seus momentos no Sereia Dourada. Sua avaliação será exibida na nossa esteira oficial.
+      </p>
+
+      <form id="form-avaliacao" onsubmit="salvarMinhaAvaliacao(event);">
+        <!-- Classificação por Estrelas -->
+        <div class="form-group" style="text-align: center; margin-bottom: 18px;">
+          <label style="display: block; font-size: 0.82rem; color: var(--gold-light); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+            Sua Classificação
+          </label>
+          <div class="star-rating-widget" id="star-rating-widget">
+            <span class="star-item active" data-value="1">★</span>
+            <span class="star-item active" data-value="2">★</span>
+            <span class="star-item active" data-value="3">★</span>
+            <span class="star-item active" data-value="4">★</span>
+            <span class="star-item active" data-value="5">★</span>
+          </div>
+          <input type="hidden" id="avaliacao-estrelas" value="5">
+        </div>
+
+        <div class="form-group">
+          <label for="avaliacao-nome">Seu Nome / Como prefere ser chamado</label>
+          <input type="text" id="avaliacao-nome" placeholder="Ex: Mariana Costa" maxlength="40" required>
+        </div>
+
+        <div class="form-group">
+          <label for="avaliacao-espaco">Espaço ou Experiência Vivenciada</label>
+          <select id="avaliacao-espaco" class="ticket-select" style="background: rgba(4,8,22,0.85); border-radius: 8px; color: #fff; padding: 10px 14px;" required>
+            <option value="Pousada & Suítes">🏡 Pousada & Suítes</option>
+            <option value="Área de Camping">⛺ Área de Camping & Glamping</option>
+            <option value="Restaurante Exclusivo">🍽️ Restaurante Exclusivo</option>
+            <option value="Experiência Geral">✨ Experiência Geral</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="avaliacao-badge">Seu Título / Destaque</label>
+          <input type="text" id="avaliacao-badge" placeholder="Ex: Hóspede VIP, Casal Apaixonado, Aventureiro" maxlength="30" value="Hóspede VIP">
+        </div>
+
+        <div class="form-group">
+          <label for="avaliacao-foto">URL da Foto de Perfil (Opcional)</label>
+          <input type="url" id="avaliacao-foto" placeholder="https://exemplo.com/sua-foto.jpg">
+        </div>
+
+        <div class="form-group">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label for="avaliacao-comentario" style="margin-bottom: 0;">Seu Depoimento</label>
+            <span id="avaliacao-char-count" style="font-size: 0.75rem; color: var(--text-muted);">0 / 240</span>
+          </div>
+          <textarea id="avaliacao-comentario" class="ticket-textarea" style="min-height: 90px; padding: 10px 14px;" maxlength="240" placeholder="Conte como foi sua estadia, o atendimento e o que mais lhe encantou..." required></textarea>
+        </div>
+
+        <button type="submit" class="btn-auth-submit" id="btn-submit-avaliacao" style="margin-top: 14px; width: 100%;">
+          PUBLICAR MINHA AVALIAÇÃO
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Firebase SDK Oficial & Configuração -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="/sereia-dourada-site/js/firebase-config.js?v=6"></script>
+  <script src="/sereia-dourada-site/js/app.js?v=6"></script>
+
+  <!-- Lógica Dinâmica de Avaliações e Modal -->
+  <script>
+    const defaultCuratedReviews = [
+      {
+        nome: "Camila Albuquerque",
+        badge: "Hóspede VIP",
+        estrelas: 5,
+        espaco: "Pousada & Suítes",
+        foto: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+        comentario: "Os quartos da pousada são um verdadeiro refúgio. O aroma amadeirado, os lençóis de puro algodão e o silêncio da noite proporcionam um descanso impecável. Voltarei com certeza!"
+      },
+      {
+        nome: "Marcelo Silveira",
+        badge: "Aventureiro VIP",
+        estrelas: 5,
+        espaco: "Área de Camping",
+        foto: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+        comentario: "A estrutura de camping superou todas as expectativas. Banheiros limpos, segurança 24h e um céu incrivelmente estrelado ao redor da fogueira ao entardecer. Experiência mágica!"
+      },
+      {
+        nome: "Renata Vasconcellos",
+        badge: "Cliente Frequente",
+        estrelas: 5,
+        espaco: "Restaurante Exclusivo",
+        foto: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
+        comentario: "O Robalo Imperial e o risoto de camarão servidos no restaurante foram os melhores pratos que provei este ano. Carta de vinhos selecionada e atendimento digno da realeza!"
+      },
+      {
+        nome: "Eduardo Fontes",
+        badge: "Casal Hóspede",
+        estrelas: 5,
+        espaco: "Pousada & Suítes",
+        foto: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
+        comentario: "Comemoramos nosso aniversário de casamento na Sereia Dourada e foi tudo memorável. Café da manhã farto com vista panorâmica e o carinho da equipe em cada detalhe."
+      },
+      {
+        nome: "Juliana Castro",
+        badge: "Hóspede Glamping",
+        estrelas: 5,
+        espaco: "Camping & Glamping",
+        foto: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
+        comentario: "O atendimento via WhatsApp foi ágil e personalizado desde a reserva até o check-out. Cada canto desse lugar transmite paz, harmonia com a natureza e sofisticação."
+      }
+    ];
+
+    function renderizarCardHtml(item, isAriaHidden = false) {
+      const estrelasNum = Math.max(1, Math.min(5, parseInt(item.estrelas) || 5));
+      const estrelasStr = "★".repeat(estrelasNum);
+      const icon = item.espaco && item.espaco.includes('Camping') ? '⛺' : (item.espaco && item.espaco.includes('Restaurante') ? '🍽️' : '🏡');
+      const safeFoto = item.foto && item.foto.startsWith('http') ? item.foto : '';
+      const avatarContent = safeFoto 
+        ? `<img src="${safeFoto}" alt="${escapeHtml(item.nome)}" onerror="this.parentElement.innerHTML='👑';">` 
+        : '👑';
+
+      return `
+        <div class="review-card" ${isAriaHidden ? 'aria-hidden="true"' : ''}>
+          <div class="review-card-top">
+            <div class="review-avatar">
+              ${avatarContent}
+            </div>
+            <div class="review-user-info">
+              <span class="review-user-name">${escapeHtml(item.nome || 'Cliente Anônimo')}</span>
+              <span class="review-user-badge">${escapeHtml(item.badge || 'Hóspede VIP')}</span>
+            </div>
+            <span class="review-stars">${estrelasStr}</span>
+          </div>
+          <p class="review-card-text">
+            "${escapeHtml(item.comentario || '')}"
+          </p>
+          <div class="review-space-badge-img">
+            <span class="review-space-icon">${icon}</span>
+            <span class="review-space-name">${escapeHtml(item.espaco || 'Pousada & Suítes')}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function atualizarEsteiraMarquee(lista) {
+      const track = document.getElementById('reviews-marquee-track');
+      if (!track) return;
+
+      let items = (lista && lista.length > 0) ? lista : defaultCuratedReviews;
+      
+      let cardsLoop = [...items];
+      while (cardsLoop.length < 8) {
+        cardsLoop = cardsLoop.concat(items);
+      }
+
+      const htmlPart1 = cardsLoop.map(i => renderizarCardHtml(i, false)).join('');
+      const htmlPart2 = cardsLoop.map(i => renderizarCardHtml(i, true)).join('');
+      track.innerHTML = htmlPart1 + htmlPart2;
+    }
+
+    function initModalAvaliacao() {
+      const modal = document.getElementById('modal-avaliacao');
+      const btnOpen = document.getElementById('btn-abrir-modal-avaliacao');
+      const btnClose = document.getElementById('btn-close-modal-avaliacao');
+      const charCounter = document.getElementById('avaliacao-char-count');
+      const commentInput = document.getElementById('avaliacao-comentario');
+      const starItems = document.querySelectorAll('#star-rating-widget .star-item');
+      const inputEstrelas = document.getElementById('avaliacao-estrelas');
+
+      if (btnOpen) {
+        btnOpen.addEventListener('click', () => {
+          try {
+            const sess = JSON.parse(localStorage.getItem('sereia_auth_session') || '{}');
+            if (sess && sess.nome) {
+              const nomeInput = document.getElementById('avaliacao-nome');
+              if (nomeInput && !nomeInput.value) nomeInput.value = sess.nome;
+            }
+            if (sess && sess.foto) {
+              const fotoInput = document.getElementById('avaliacao-foto');
+              if (fotoInput && !fotoInput.value) fotoInput.value = sess.foto;
+            }
+          } catch(e) {}
+          if (modal) modal.classList.add('active');
+        });
+      }
+
+      if (btnClose && modal) {
+        btnClose.addEventListener('click', () => modal.classList.remove('active'));
+      }
+
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) modal.classList.remove('active');
+        });
+      }
+
+      if (commentInput && charCounter) {
+        commentInput.addEventListener('input', () => {
+          charCounter.textContent = `${commentInput.value.length} / 240`;
+        });
+      }
+
+      starItems.forEach(star => {
+        star.addEventListener('click', () => {
+          const val = parseInt(star.getAttribute('data-value'));
+          if (inputEstrelas) inputEstrelas.value = val;
+          starItems.forEach(s => {
+            const sVal = parseInt(s.getAttribute('data-value'));
+            s.classList.toggle('active', sVal <= val);
+          });
+        });
+
+        star.addEventListener('mouseenter', () => {
+          const val = parseInt(star.getAttribute('data-value'));
+          starItems.forEach(s => {
+            const sVal = parseInt(s.getAttribute('data-value'));
+            s.classList.toggle('hovered', sVal <= val);
+          });
+        });
+
+        star.addEventListener('mouseleave', () => {
+          starItems.forEach(s => s.classList.remove('hovered'));
+        });
+      });
+    }
+
+    async function salvarMinhaAvaliacao(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-submit-avaliacao');
+      const origText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Publicando...";
+
+      const estrelas = parseInt(document.getElementById('avaliacao-estrelas').value) || 5;
+      const nome = document.getElementById('avaliacao-nome').value.trim();
+      const espaco = document.getElementById('avaliacao-espaco').value;
+      const badge = document.getElementById('avaliacao-badge').value.trim() || 'Hóspede VIP';
+      const foto = document.getElementById('avaliacao-foto').value.trim();
+      const comentario = document.getElementById('avaliacao-comentario').value.trim();
+
+      try {
+        if (typeof window.salvarNovaAvaliacao !== 'function') {
+          throw new Error("Módulo de avaliações não carregado.");
+        }
+        await window.salvarNovaAvaliacao({
+          nome,
+          espaco,
+          badge,
+          foto,
+          comentario,
+          estrelas
+        });
+
+        document.getElementById('form-avaliacao').reset();
+        document.getElementById('modal-avaliacao').classList.remove('active');
+        
+        if (typeof window.mostrarToastNotificacaoAoVivo === 'function') {
+          window.mostrarToastNotificacaoAoVivo({
+            titulo: "✦ Avaliação Publicada!",
+            mensagem: "Muito obrigado por compartilhar sua experiência na esteira oficial da Sereia Dourada."
+          });
+        } else {
+          alert("✦ Sua avaliação foi publicada com sucesso na esteira!");
+        }
+      } catch(err) {
+        alert("Erro ao publicar avaliação: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initModalAvaliacao();
+      
+      function conectarEscutaAvaliacoes() {
+        if (typeof window.escutarTodasAvaliacoes === 'function') {
+          window.escutarTodasAvaliacoes((avaliacoes) => {
+            atualizarEsteiraMarquee(avaliacoes);
+          });
+        } else {
+          setTimeout(conectarEscutaAvaliacoes, 300);
+        }
+      }
+      conectarEscutaAvaliacoes();
+    });
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+
+</html>
