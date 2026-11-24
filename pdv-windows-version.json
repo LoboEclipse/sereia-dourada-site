@@ -1,0 +1,5 @@
+{
+  "version": "1.0.0",
+  "releaseNotes": "Primeira versão oficial do PDV-Loja Windows em modo cliente conectado ao Firebase com atualizações OTA.",
+  "downloadUrl": "https://github.com/LoboEclipse/Sereia-dourada/releases/tag/pdv-win-v1.0.0"
+}
