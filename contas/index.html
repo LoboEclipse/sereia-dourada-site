@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Gestão de Contas & Usuários | Sereia Dourada</title>
+  <meta name="description" content="Painel oficial para gestão de contas, permissões de administradores e cadastros de clientes da Pousada Sereia Dourada.">
+  
+  <!-- Favicon Oficial -->
+  <link rel="icon" type="image/png" href="/sereia-dourada-site/assets/logo.png">
+
+  <!-- Progressive Web App (PWA) -->
+  <link rel="manifest" href="/sereia-dourada-site/manifest.json">
+  <meta name="theme-color" content="#050C1A">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sereia Dourada">
+  <link rel="apple-touch-icon" href="/sereia-dourada-site/assets/logo.png">
+
+  <!-- Google Fonts Oficiais -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos Globais -->
+  <link rel="stylesheet" href="/sereia-dourada-site/css/styles.css?v=6">
+  
+  <!-- Prevenção imediata de FOUC / flash de botões para usuários autenticados -->
+  <script>
+    (function() {
+      try {
+        var hasSess = localStorage.getItem('sereia_auth_session');
+        if (!hasSess) {
+          for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (k && k.indexOf('firebase:authUser:') === 0) { hasSess = true; break; }
+          }
+        }
+        if (hasSess) document.documentElement.classList.add('auth-session-active');
+      } catch(e) {}
+    })();
+  </script>
+</head>
+
+<body>
+  <!-- Canvas de Partículas Douradas -->
+  <canvas id="particles-canvas"></canvas>
+
+  <!-- Barra de Cima (Header) -->
+  <header class="site-header" id="site-header">
+    <div class="header-inner">
+      <!-- Canto Esquerdo: Logo e Nome -->
+      <a href="/sereia-dourada-site/" class="brand-logo" id="header-logo">
+        <div class="logo-badge-mini">
+          <img src="/sereia-dourada-site/assets/logo.png" alt="Sereia Dourada Logotipo Oficial" class="nav-logo-img">
+        </div>
+        <div class="brand-text">
+          <span class="brand-title-top gold-gradient-text">SEREIA</span>
+          <span class="brand-title-bottom gold-gradient-text">DOURADA</span>
+        </div>
+      </a>
+
+      <!-- Meio da Barra: Links Centrais do Painel Administrativo -->
+      <nav class="nav-center-wrap">
+        <ul class="nav-center">
+          <li><a href="/sereia-dourada-site/" class="nav-link">Inicial</a></li>
+          <li><a href="/sereia-dourada-site/admin" class="nav-link">Reservas</a></li>
+          <li><a href="/sereia-dourada-site/contas" class="nav-link active">Contas</a></li>
+          <li><a href="/sereia-dourada-site/configuracoes" class="nav-link">Configurações</a></li>
+        </ul>
+      </nav>
+
+      <!-- Canto Direito: Ações & Menu Mobile -->
+      <div class="header-right-wrap">
+        <div class="header-actions">
+          <script>
+            (function() {
+              var parent = document.currentScript.parentElement;
+              var sess = null;
+              try {
+                sess = JSON.parse(localStorage.getItem('sereia_auth_session'));
+                if (!sess || !sess.uid) {
+                  for (var i = 0; i < localStorage.length; i++) {
+                    var k = localStorage.key(i);
+                    if (k && k.indexOf('firebase:authUser:') === 0) {
+                      var fb = JSON.parse(localStorage.getItem(k));
+                      if (fb && fb.uid) {
+                        var cName = localStorage.getItem('sereia_vip_nome_' + fb.uid) || fb.displayName || (fb.email ? fb.email.split('@')[0] : 'CLIENTE');
+                        var pNome = cName.trim().split(/\s+/)[0].toUpperCase();
+                        var cFoto = localStorage.getItem('sereia_vip_foto_' + fb.uid) || fb.photoURL || '';
+                        sess = { uid: fb.uid, nome: cName, primeiroNome: pNome, foto: cFoto };
+                        break;
+                      }
+                    }
+                  }
+                }
+              } catch(e) {}
+
+              if (sess && sess.uid) {
+                var avatar = sess.foto ? '<img src="' + sess.foto + '" alt="Foto de perfil">' : '<span style="font-size: 1rem;">👑</span>';
+                parent.innerHTML = 
+                  '<div class="header-user-actions-group">' +
+                    '<div class="notif-menu-container" id="notif-menu-container">' +
+                      '<button class="notif-bell-btn" id="notif-bell-btn" type="button" aria-expanded="false" title="Notificações">' +
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                          '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>' +
+                          '<path d="M13.73 21a2 2 0 0 1-3.46 0"></path>' +
+                        '</svg>' +
+                        '<span class="notif-badge-count" id="notif-badge-count" style="display: none;">0</span>' +
+                      '</button>' +
+                    '</div>' +
+                    '<div class="user-menu-container" id="user-menu-container">' +
+                      '<button class="user-menu-trigger" id="user-menu-trigger" type="button" aria-expanded="false" title="Menu da Conta">' +
+                        '<span class="user-menu-name" id="header-user-display-name">' + (sess.primeiroNome || 'CLIENTE') + '</span>' +
+                        '<span class="user-menu-avatar" id="header-avatar-wrap">' + avatar + '</span>' +
+                        '<span class="user-menu-chevron" id="user-menu-chevron">' +
+                          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+                            '<polyline points="6 9 12 15 18 9"></polyline>' +
+                          '</svg>' +
+                        '</span>' +
+                      '</button>' +
+                    '</div>' +
+                  '</div>';
+              } else {
+                parent.innerHTML = 
+                  '<button class="btn-auth-login" id="btn-login" type="button">Entrar</button>';
+              }
+            })();
+          </script>
+          <noscript>
+            <button class="btn-auth-login" id="btn-login" type="button">Entrar</button>
+          </noscript>
+        </div>
+
+        <!-- Botão Hamburger Mobile -->
+        <button class="mobile-hamburger-btn" id="mobile-hamburger-btn" aria-label="Abrir Menu" type="button" aria-expanded="false">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Menu Lateral Off-Canvas Mobile -->
+  <div class="mobile-nav-drawer" id="mobile-nav-drawer" aria-hidden="true">
+    <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
+    <div class="mobile-drawer-content">
+      <div class="mobile-drawer-header">
+        <div class="brand-text">
+          <span class="brand-title-top gold-gradient-text">SEREIA</span>
+          <span class="brand-title-bottom gold-gradient-text">DOURADA</span>
+        </div>
+        <button class="mobile-drawer-close" id="mobile-drawer-close" type="button" aria-label="Fechar">&times;</button>
+      </div>
+      <ul class="mobile-nav-links">
+        <li><a href="/sereia-dourada-site/" class="mobile-nav-link"><span>🏡</span> Inicial</a></li>
+        <li><a href="/sereia-dourada-site/admin" class="mobile-nav-link"><span>📋</span> Reservas</a></li>
+        <li><a href="/sereia-dourada-site/contas" class="mobile-nav-link active"><span>👥</span> Contas</a></li>
+        <li><a href="/sereia-dourada-site/configuracoes" class="mobile-nav-link"><span>⚙️</span> Configurações</a></li>
+      </ul>
+      <div class="mobile-drawer-footer">
+        <button class="btn-pwa-install" id="btn-pwa-install-mobile" style="display: none;" type="button">
+          <span>📲</span> Instalar Aplicativo
+        </button>
+        <p class="mobile-drawer-copy">© 2026 Sereia Dourada. Painel de Controle.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conteúdo Principal do Painel de Contas -->
+  <main class="main-content">
+    
+    <!-- Estado 1: Verificando Acesso Administrativo -->
+    <div id="contas-auth-loading" style="text-align: center; padding: 120px 20px;">
+      <div style="font-size: 2.2rem; margin-bottom: 16px; animation: pulse 1.5s infinite;">👑</div>
+      <h2 style="color: var(--gold-light); font-family: var(--font-serif); font-size: 1.35rem; letter-spacing: 1px;">
+        Verificando Credenciais Administrativas...
+      </h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 8px;">
+        Conectando com segurança ao Cloud Firestore
+      </p>
+    </div>
+
+    <!-- Estado 2: Acesso Negado para Usuário Comum / Visitante -->
+    <div id="contas-auth-guard" class="container" style="display: none; max-width: 650px; padding: 80px 20px;">
+      <div class="admin-denied-card">
+        <div class="admin-denied-icon">🔒</div>
+        <h2 class="admin-denied-title">Área Restrita aos Administradores</h2>
+        <div id="contas-denied-message" class="admin-denied-desc">
+          Você precisa estar autenticado com uma conta com privilégios de administrador para gerenciar usuários.
+        </div>
+        <div class="admin-denied-actions">
+          <a href="/sereia-dourada-site/" class="btn-auth-register" style="display: inline-block;">Retornar ao Início</a>
+          <button id="btn-open-login-from-guard" class="btn-auth-login" type="button">Entrar com Conta Admin</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado 3: Painel de Gestão de Contas (Liberado para Admins) -->
+    <div id="contas-dashboard-content" class="admin-page-wrap" style="display: none; width: 100%;">
+      
+      <!-- Cabeçalho do Painel Imperial -->
+      <section class="admin-header-hero" style="text-align: center; margin-bottom: 36px;">
+        <div class="luxury-badge" style="margin-bottom: 14px;">
+          <span class="badge-dot">✦</span>
+          <span>ADMINISTRAÇÃO OFICIAL SEREIA DOURADA</span>
+          <span class="badge-dot">✦</span>
+        </div>
+        <h1 class="admin-main-title" style="font-family: var(--font-serif); font-size: 2.2rem; font-weight: 900; color: #FFFFFF; text-transform: uppercase;">
+          PAINEL DE <span class="gold-gradient-text">GESTÃO DE CONTAS</span>
+        </h1>
+        <p class="admin-sub-title" style="color: var(--text-secondary); max-width: 680px; margin: 10px auto 0; font-size: 0.95rem; line-height: 1.6;">
+          Visualize todas as contas do sistema, edite cadastros e alterne permissões entre Cliente e Administrador integradas em tempo real com o Cloud Firestore.
+        </p>
+      </section>
+
+      <!-- Cartões de Métricas / KPIs -->
+      <section class="admin-kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+        <div class="admin-kpi-card">
+          <div class="admin-kpi-icon kpi-icon-total">👥</div>
+          <div class="admin-kpi-info">
+            <span class="admin-kpi-num" id="kpi-total-contas">0</span>
+            <span class="admin-kpi-label">Total de Contas</span>
+          </div>
+        </div>
+
+        <div class="admin-kpi-card">
+          <div class="admin-kpi-icon" style="background: rgba(212, 175, 55, 0.15); border: 1px solid rgba(212, 175, 55, 0.35); color: var(--gold-light);">👑</div>
+          <div class="admin-kpi-info">
+            <span class="admin-kpi-num" id="kpi-total-admins" style="color: var(--gold-light);">0</span>
+            <span class="admin-kpi-label">Administradores</span>
+          </div>
+        </div>
+
+        <div class="admin-kpi-card">
+          <div class="admin-kpi-icon" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.35); color: #93C5FD;">👤</div>
+          <div class="admin-kpi-info">
+            <span class="admin-kpi-num" id="kpi-total-clientes" style="color: #93C5FD;">0</span>
+            <span class="admin-kpi-label">Clientes VIP</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Barra de Ferramentas: Busca e Filtro de Contas -->
+      <section class="admin-toolbar">
+        <div class="admin-search-box">
+          <span>🔍</span>
+          <input type="text" id="contas-search-input" placeholder="Buscar por nome, e-mail, WhatsApp ou ID...">
+        </div>
+
+        <div class="admin-filter-pills">
+          <button class="admin-filter-pill active" data-filter="todas" type="button">Todas (<span id="count-pill-todas">0</span>)</button>
+          <button class="admin-filter-pill" data-filter="admin" type="button">Administradores 👑 (<span id="count-pill-admins">0</span>)</button>
+          <button class="admin-filter-pill" data-filter="cliente" type="button">Clientes 👤 (<span id="count-pill-clientes">0</span>)</button>
+        </div>
+      </section>
+
+      <!-- Lista Dinâmica de Contas -->
+      <section id="contas-cards-container">
+        <div id="contas-loading" style="text-align: center; padding: 50px; color: var(--text-muted); font-size: 1.1rem;">
+          Conectando ao banco de dados Cloud Firestore...
+        </div>
+        <div class="admin-cards-list" id="contas-cards-list" style="display: none;"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Modal de Edição de Conta de Usuário -->
+  <div id="modal-edit-user" class="admin-modal-backdrop">
+    <div class="admin-modal-box">
+      <div class="admin-modal-header">
+        <h3 class="admin-modal-title">Editar Cadastro de Usuário</h3>
+        <button id="btn-close-edit-modal" class="admin-modal-close" type="button">&times;</button>
+      </div>
+      <form id="form-edit-user" onsubmit="return false;">
+        <input type="hidden" id="edit-user-doc-id">
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label for="edit-user-nome" style="color: var(--gold-light); font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 6px;">Nome Completo</label>
+          <input type="text" id="edit-user-nome" required style="width: 100%; background: rgba(4, 8, 22, 0.85); border: 1px solid var(--border-gold-subtle); color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem;">
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label for="edit-user-whatsapp" style="color: var(--gold-light); font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 6px;">Telefone / WhatsApp</label>
+          <input type="text" id="edit-user-whatsapp" placeholder="(11) 99999-9999" style="width: 100%; background: rgba(4, 8, 22, 0.85); border: 1px solid var(--border-gold-subtle); color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem;">
+        </div>
+        <div class="form-group" style="margin-bottom: 24px;">
+          <label for="edit-user-role" style="color: var(--gold-light); font-size: 0.85rem; font-weight: 700; display: block; margin-bottom: 6px;">Nível de Acesso</label>
+          <select id="edit-user-role" style="width: 100%; background: rgba(4, 8, 22, 0.85); border: 1px solid var(--border-gold-subtle); color: #fff; padding: 10px 14px; border-radius: 8px; font-size: 0.95rem;">
+            <option value="cliente">Cliente VIP 👤</option>
+            <option value="admin">Administrador 👑</option>
+          </select>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px;">
+          <button type="button" id="btn-cancel-edit" class="btn-admin-action" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff;">Cancelar</button>
+          <button type="submit" id="btn-save-edit" class="btn-auth-register" style="padding: 10px 24px;">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Feedback Toast Notificação -->
+  <div id="contas-toast" class="profile-toast" style="display: none;"></div>
+
+  <!-- Rodapé Oficial -->
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <div class="footer-clean-wrapper">
+        <div class="brand-text">
+          <span class="brand-title-top gold-gradient-text">SEREIA</span>
+          <span class="brand-title-bottom gold-gradient-text">DOURADA</span>
+        </div>
+        <p class="footer-copy">© 2026 Sereia Dourada. Painel Administrativo de Contas. Todos os direitos reservados.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal de Autenticação Flutuante -->
+  <div class="modal-overlay" id="auth-modal">
+    <div class="modal-container">
+      <button class="modal-close" id="modal-close-btn">&times;</button>
+      <div class="modal-header">
+        <h2 class="modal-title">Acesso VIP</h2>
+        <p class="modal-subtitle">Entre com sua credencial de Administrador</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="tab-login-btn">Entrar</button>
+        <button class="auth-tab-btn" id="tab-register-btn" style="display: none;">Registrar-se</button>
+      </div>
+
+      <form class="auth-form" id="form-login" onsubmit="return false;">
+        <div class="form-group">
+          <label for="login-email">E-mail ou Usuário</label>
+          <input type="email" id="login-email" placeholder="seuemail@exemplo.com" required>
+        </div>
+        <div class="form-group">
+          <label for="login-password">Senha Secreta</label>
+          <div class="password-input-wrap">
+            <input type="password" id="login-password" placeholder="••••••••" required>
+            <button type="button" class="btn-toggle-password" data-target="login-password" aria-label="Mostrar ou ocultar senha" title="Ver senha">
+              <svg class="eye-icon-show" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg class="eye-icon-hide" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn-auth-submit">Acessar Painel</button>
+      </form>
+      <!-- Login Social (Google e Facebook) -->
+      <div class="auth-social-wrap" id="auth-social-wrap">
+        <div class="auth-social-divider"><span>ou continue com</span></div>
+        <div class="auth-social-buttons">
+          <button type="button" class="btn-social-auth btn-social-google" id="btn-login-google">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#EA4335" d="M12 10.2v3.9h5.4c-.2 1.3-1.5 3.8-5.4 3.8-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.7 3.3 14.6 2.4 12 2.4 6.7 2.4 2.4 6.7 2.4 12s4.3 9.6 9.6 9.6c5.5 0 9.2-3.9 9.2-9.4 0-.6-.1-1.1-.2-1.6H12z"/>
+              <path fill="#4285F4" d="M21.2 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4c-.3 1.3-1 2.4-2.2 3.1l3.4 2.6c2-1.8 2.6-4.5 2.6-7.6z"/>
+              <path fill="#FBBC05" d="M6.7 14.4c-.2-.7-.4-1.5-.4-2.4s.2-1.7.4-2.4L3.5 7.1C2.8 8.6 2.4 10.2 2.4 12s.4 3.4 1.1 4.9l3.2-2.5z"/>
+              <path fill="#34A853" d="M12 21.6c2.6 0 4.8-.9 6.4-2.4l-3.4-2.6c-.9.6-2 .9-3 .9-2.4 0-4.4-1.6-5.1-3.8l-3.2 2.5C5.2 19.4 8.3 21.6 12 21.6z"/>
+            </svg>
+            <span>Google</span>
+          </button>
+          <button type="button" class="btn-social-auth btn-social-facebook" id="btn-login-facebook">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#1877F2" d="M24 12.07C24 5.41 18.63 0 12 0S0 5.41 0 12.07c0 6.02 4.39 11.01 10.13 11.93v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.96h-1.51c-1.49 0-1.95.93-1.95 1.88v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.08 24 18.09 24 12.07z"/>
+            </svg>
+            <span>Facebook</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK Oficial & Configuração -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="/sereia-dourada-site/js/firebase-config.js?v=6"></script>
+  <script src="/sereia-dourada-site/js/app.js?v=6"></script>
+
+  <!-- Lógica Administrativa de Gestão de Contas -->
+  <script>
+    let todasContas = [];
+    let filtroAtual = 'todas';
+    let termoBusca = '';
+    let usuarioAtualAdmin = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      iniciarPainelContas();
+      configurarFiltrosEBusca();
+      configurarModalEdicao();
+    });
+
+    function iniciarPainelContas() {
+      const authLoading = document.getElementById('contas-auth-loading');
+      const authGuard = document.getElementById('contas-auth-guard');
+      const deniedMessage = document.getElementById('contas-denied-message');
+      const dashboardContent = document.getElementById('contas-dashboard-content');
+
+      if (typeof firebase === 'undefined' || !firebase.auth) {
+        setTimeout(iniciarPainelContas, 250);
+        return;
+      }
+
+      firebase.auth().onAuthStateChanged(async (user) => {
+        if (!user) {
+          authLoading.style.display = 'none';
+          authGuard.style.display = 'block';
+          dashboardContent.style.display = 'none';
+          if (deniedMessage) {
+            deniedMessage.innerHTML = "Faça login com uma conta autorizada de Administrador para acessar a gestão de contas.";
+          }
+          return;
+        }
+
+        usuarioAtualAdmin = user;
+
+        // Verifica privilégio de Administrador
+        let perfilDoc = null;
+        if (window.obterPerfilUsuarioVIP) {
+          try {
+            perfilDoc = await window.obterPerfilUsuarioVIP(user.uid);
+          } catch(e) {}
+        }
+
+        const isAdm = typeof window.verificarUsuarioAdmin === 'function'
+          ? window.verificarUsuarioAdmin(user, perfilDoc)
+          : (perfilDoc && (perfilDoc.isAdmin === true || perfilDoc.perfil === 'admin' || perfilDoc.role === 'admin')) ||
+            (localStorage.getItem('sereia_admin_' + user.uid) === 'true');
+
+        if (!isAdm) {
+          authLoading.style.display = 'none';
+          authGuard.style.display = 'block';
+          dashboardContent.style.display = 'none';
+          if (deniedMessage) {
+            deniedMessage.innerHTML = `Sua conta atual (<strong>${escapeHtml(user.email || '')}</strong>) possui status de <strong>Cliente VIP</strong> e não tem permissão para acessar a gestão de contas.`;
+          }
+          return;
+        }
+
+        // Usuário é Administrador Autenticado: libera o painel
+        authLoading.style.display = 'none';
+        authGuard.style.display = 'none';
+        dashboardContent.style.display = 'block';
+
+        conectarEscutaContas();
+      });
+
+      const btnOpenLogin = document.getElementById('btn-open-login-from-guard');
+      if (btnOpenLogin) {
+        btnOpenLogin.addEventListener('click', () => {
+          const modal = document.getElementById('auth-modal');
+          if (modal) modal.classList.add('active');
+        });
+      }
+    }
+
+    function conectarEscutaContas() {
+      if (typeof window.escutarTodasContasAdmin !== 'function') {
+        setTimeout(conectarEscutaContas, 300);
+        return;
+      }
+
+      window.escutarTodasContasAdmin((contas) => {
+        todasContas = contas || [];
+        const loadingEl = document.getElementById('contas-loading');
+        const listEl = document.getElementById('contas-cards-list');
+
+        if (loadingEl) loadingEl.style.display = 'none';
+        if (listEl) listEl.style.display = 'flex';
+
+        atualizarKPIs(todasContas);
+        renderizarContas();
+      });
+    }
+
+    function atualizarKPIs(contas) {
+      const total = contas.length;
+      const admins = contas.filter(c => c.isAdmin === true || c.perfil === 'admin' || c.role === 'admin').length;
+      const clientes = total - admins;
+
+      const elTotal = document.getElementById('kpi-total-contas');
+      const elAdmins = document.getElementById('kpi-total-admins');
+      const elClientes = document.getElementById('kpi-total-clientes');
+
+      if (elTotal) elTotal.textContent = total;
+      if (elAdmins) elAdmins.textContent = admins;
+      if (elClientes) elClientes.textContent = clientes;
+
+      const pillTodas = document.getElementById('count-pill-todas');
+      const pillAdmins = document.getElementById('count-pill-admins');
+      const pillClientes = document.getElementById('count-pill-clientes');
+
+      if (pillTodas) pillTodas.textContent = total;
+      if (pillAdmins) pillAdmins.textContent = admins;
+      if (pillClientes) pillClientes.textContent = clientes;
+    }
+
+    function configurarFiltrosEBusca() {
+      const searchInput = document.getElementById('contas-search-input');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          termoBusca = (e.target.value || '').toLowerCase().trim();
+          renderizarContas();
+        });
+      }
+
+      const pills = document.querySelectorAll('.admin-filter-pill');
+      pills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          pills.forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          filtroAtual = pill.getAttribute('data-filter') || 'todas';
+          renderizarContas();
+        });
+      });
+    }
+
+    function renderizarContas() {
+      const listEl = document.getElementById('contas-cards-list');
+      if (!listEl) return;
+
+      let filtradas = todasContas.filter(c => {
+        const isAdm = c.isAdmin === true || c.perfil === 'admin' || c.role === 'admin';
+        if (filtroAtual === 'admin' && !isAdm) return false;
+        if (filtroAtual === 'cliente' && isAdm) return false;
+
+        if (termoBusca) {
+          const nome = (c.nome || '').toLowerCase();
+          const email = (c.email || '').toLowerCase();
+          const whats = (c.whatsapp || '').toLowerCase();
+          const docId = (c.id || '').toLowerCase();
+          return nome.includes(termoBusca) || email.includes(termoBusca) || whats.includes(termoBusca) || docId.includes(termoBusca);
+        }
+        return true;
+      });
+
+      if (filtradas.length === 0) {
+        listEl.innerHTML = `
+          <div style="text-align: center; padding: 60px 20px; background: rgba(9, 20, 46, 0.5); border-radius: 16px; border: 1px dashed rgba(212, 175, 55, 0.25);">
+            <div style="font-size: 2.2rem; margin-bottom: 12px;">🔍</div>
+            <h3 style="color: #FFFFFF; font-family: var(--font-serif); font-size: 1.15rem; margin-bottom: 6px;">Nenhuma conta localizada</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Tente ajustar o termo de pesquisa ou os filtros acima.</p>
+          </div>
+        `;
+        return;
+      }
+
+      listEl.innerHTML = filtradas.map(c => {
+        const isAdm = c.isAdmin === true || c.perfil === 'admin' || c.role === 'admin';
+        const cardClass = isAdm ? 'is-admin-card' : 'is-client-card';
+        const roleBadge = isAdm 
+          ? `<span class="admin-user-role-badge role-badge-admin">👑 Administrador</span>`
+          : `<span class="admin-user-role-badge role-badge-cliente">👤 Cliente VIP</span>`;
+
+        const safeFotoUrl = typeof sanitizarUrlImagem === 'function' ? sanitizarUrlImagem(c.fotoUrl) : null;
+        const avatarImg = safeFotoUrl 
+          ? `<img src="${safeFotoUrl}" alt="Foto de ${escapeHtml(c.nome || 'Usuário')}">`
+          : `<span class="admin-user-avatar-emoji">${isAdm ? '👑' : '👤'}</span>`;
+
+        const safeNomeEscapado = (c.nome || c.email || '').replace(/['"\\]/g, '');
+        const btnToggleHtml = isAdm
+          ? `<button class="btn-admin-action btn-make-client" onclick="confirmarAlternarPapel('${escapeHtml(c.id)}', false, '${escapeHtml(safeNomeEscapado)}')">
+               <span>⬇️</span> Tornar Cliente
+             </button>`
+          : `<button class="btn-admin-action btn-make-admin" onclick="confirmarAlternarPapel('${escapeHtml(c.id)}', true, '${escapeHtml(safeNomeEscapado)}')">
+               <span>✦</span> Promover a Admin
+             </button>`;
+
+        let dataCad = 'Não informada';
+        if (c.criadoEm && c.criadoEm.toDate) {
+          dataCad = c.criadoEm.toDate().toLocaleDateString('pt-BR');
+        }
+
+        return `
+          <div class="admin-user-card ${cardClass}" id="user-card-${c.id}">
+            <div class="admin-user-header">
+              <div class="admin-user-avatar-wrap">
+                <div class="admin-user-avatar">
+                  ${avatarImg}
+                </div>
+                <div class="admin-user-info-main">
+                  <div class="admin-user-title-row">
+                    <span class="admin-user-name">${escapeHtml(c.nome || 'Cliente Sem Nome')}</span>
+                    ${roleBadge}
+                  </div>
+                  <div style="margin-top: 2px;">
+                    <span class="admin-user-doc-id">ID: #${c.id}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="admin-user-actions-row">
+                ${btnToggleHtml}
+                <button class="btn-admin-action btn-edit-user" onclick="abrirModalEdicao('${c.id}')">
+                  <span>✏️</span> Editar
+                </button>
+              </div>
+            </div>
+
+            <div class="admin-user-details-grid">
+              <div class="admin-user-detail-item">
+                <span class="admin-user-detail-label">E-mail Oficial</span>
+                <span class="admin-user-detail-value">${escapeHtml(c.email || 'Não informado')}</span>
+              </div>
+              <div class="admin-user-detail-item">
+                <span class="admin-user-detail-label">Telefone / WhatsApp</span>
+                <span class="admin-user-detail-value">${escapeHtml(c.whatsapp || 'Não informado')}</span>
+              </div>
+              <div class="admin-user-detail-item">
+                <span class="admin-user-detail-label">UID do Auth</span>
+                <span class="admin-user-detail-value" style="font-family: monospace; font-size: 0.8rem; color: var(--gold-light);">${escapeHtml(c.uid || c.id)}</span>
+              </div>
+              <div class="admin-user-detail-item">
+                <span class="admin-user-detail-label">Data de Cadastro</span>
+                <span class="admin-user-detail-value">${dataCad}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Modal de Edição de Dados
+    function configurarModalEdicao() {
+      const modal = document.getElementById('modal-edit-user');
+      const btnClose = document.getElementById('btn-close-edit-modal');
+      const btnCancel = document.getElementById('btn-cancel-edit');
+      const form = document.getElementById('form-edit-user');
+
+      if (btnClose && modal) btnClose.onclick = () => modal.classList.remove('active');
+      if (btnCancel && modal) btnCancel.onclick = () => modal.classList.remove('active');
+
+      if (modal) {
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) modal.classList.remove('active');
+        });
+      }
+
+      if (form) {
+        form.onsubmit = async (e) => {
+          e.preventDefault();
+          const docId = document.getElementById('edit-user-doc-id').value;
+          const nome = document.getElementById('edit-user-nome').value.trim();
+          const whatsapp = document.getElementById('edit-user-whatsapp').value.trim();
+          const role = document.getElementById('edit-user-role').value;
+          const submitBtn = document.getElementById('btn-save-edit');
+
+          if (!docId || !nome) {
+            mostrarToast("Por favor, informe o nome completo.", "error");
+            return;
+          }
+
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Salvando...";
+
+          try {
+            if (typeof window.editarContaUsuarioAdmin === 'function') {
+              await window.editarContaUsuarioAdmin(docId, {
+                nome: nome,
+                whatsapp: whatsapp,
+                isAdmin: role === 'admin'
+              });
+            }
+            mostrarToast("✦ Cadastro atualizado com sucesso!", "success");
+            modal.classList.remove('active');
+          } catch(err) {
+            mostrarToast("Erro ao salvar: " + err.message, "error");
+          } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Salvar Alterações";
+          }
+        };
+      }
+    }
+
+    window.abrirModalEdicao = function(docId) {
+      const conta = todasContas.find(c => c.id === docId);
+      if (!conta) return;
+
+      document.getElementById('edit-user-doc-id').value = docId;
+      document.getElementById('edit-user-nome').value = conta.nome || '';
+      document.getElementById('edit-user-whatsapp').value = conta.whatsapp || '';
+      
+      const isAdm = conta.isAdmin === true || conta.perfil === 'admin' || conta.role === 'admin';
+      document.getElementById('edit-user-role').value = isAdm ? 'admin' : 'cliente';
+
+      const modal = document.getElementById('modal-edit-user');
+      if (modal) modal.classList.add('active');
+    };
+
+    window.confirmarAlternarPapel = async function(docId, tornarAdmin, nomeUsuario) {
+      const acao = tornarAdmin ? "PROMOVER a Administrador" : "REBAIXAR para Cliente";
+      const confirmacao = confirm(`Deseja realmente ${acao} a conta de "${nomeUsuario}"?`);
+      if (!confirmacao) return;
+
+      try {
+        if (typeof window.atualizarPapelUsuarioAdmin === 'function') {
+          await window.atualizarPapelUsuarioAdmin(docId, tornarAdmin);
+        }
+        mostrarToast(`✦ Cargo atualizado para ${tornarAdmin ? 'ADMIN' : 'CLIENTE'} com sucesso!`, "success");
+      } catch(err) {
+        mostrarToast("Erro ao alterar cargo: " + err.message, "error");
+      }
+    };
+
+    function mostrarToast(mensagem, tipo = 'success') {
+      const toast = document.getElementById('contas-toast');
+      if (!toast) return;
+      toast.textContent = mensagem;
+      toast.className = 'profile-toast ' + (tipo === 'error' ? 'toast-error' : '');
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 3500);
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+
+</html>

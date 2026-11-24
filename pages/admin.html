@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Painel Administrativo de Reservas | Sereia Dourada</title>
+  <meta name="description" content="Painel de controle oficial para aprovação e gestão em tempo real das reservas da Pousada, Camping e Restaurante Sereia Dourada.">
+  
+  <!-- Favicon Oficial -->
+  <link rel="icon" type="image/png" href="/sereia-dourada-site/assets/logo.png">
+
+  <!-- Progressive Web App (PWA) -->
+  <link rel="manifest" href="/sereia-dourada-site/manifest.json">
+  <meta name="theme-color" content="#050C1A">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sereia Dourada">
+  <link rel="apple-touch-icon" href="/sereia-dourada-site/assets/logo.png">
+
+  <!-- Google Fonts Oficiais -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos Globais -->
+  <link rel="stylesheet" href="/sereia-dourada-site/css/styles.css?v=6">
+  <!-- Prevenção imediata de FOUC / flash de botões para usuários autenticados -->
+  <script>
+    (function() {
+      try {
+        var hasSess = localStorage.getItem('sereia_auth_session');
+        if (!hasSess) {
+          for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (k && k.indexOf('firebase:authUser:') === 0) { hasSess = true; break; }
+          }
+        }
+        if (hasSess) document.documentElement.classList.add('auth-session-active');
+      } catch(e) {}
+    })();
+  </script>
+</head>
+
+<body>
+  <!-- Canvas de Partículas Douradas -->
+  <canvas id="particles-canvas"></canvas>
+
+  <!-- Barra de Cima (Header) -->
+  <header class="site-header" id="site-header">
+    <div class="header-inner">
+      <!-- Canto Esquerdo: Logo e Nome -->
+      <a href="/sereia-dourada-site/" class="brand-logo" id="header-logo">
+        <div class="logo-badge-mini">
+          <img src="/sereia-dourada-site/assets/logo.png" alt="Sereia Dourada Logotipo Oficial" class="nav-logo-img">
+        </div>
+        <div class="brand-text">
+          <span class="brand-title-top gold-gradient-text">SEREIA</span>
+          <span class="brand-title-bottom gold-gradient-text">DOURADA</span>
+        </div>
+      </a>
+
+      <!-- Meio da Barra: Links Centrais do Painel Administrativo -->
+      <nav class="nav-center-wrap">
+        <ul class="nav-center">
+          <li><a href="/sereia-dourada-site/" class="nav-link">Inicial</a></li>
+          <li><a href="/sereia-dourada-site/admin" class="nav-link active">Reservas</a></li>
+          <li><a href="/sereia-dourada-site/contas" class="nav-link">Contas</a></li>
+          <li><a href="/sereia-dourada-site/configuracoes" class="nav-link">Configurações</a></li>
+        </ul>
+      </nav>
+
+      <!-- Canto Direito: Ações & Menu Mobile -->
+      <div class="header-right-wrap">
+        <div class="header-actions">
+          <script>
+            (function() {
+              var parent = document.currentScript.parentElement;
+              var sess = null;
+              try {
+                sess = JSON.parse(localStorage.getItem('sereia_auth_session'));
+                if (!sess || !sess.uid) {
+                  for (var i = 0; i < localStorage.length; i++) {
+                    var k = localStorage.key(i);
+                    if (k && k.indexOf('firebase:authUser:') === 0) {
+                      var fb = JSON.parse(localStorage.getItem(k));
+                      if (fb && fb.uid) {
+                        var cName = localStorage.getItem('sereia_vip_nome_' + fb.uid) || fb.displayName || (fb.email ? fb.email.split('@')[0] : 'CLIENTE');
+                        var pNome = cName.trim().split(/\s+/)[0].toUpperCase();
+                        var cFoto = localStorage.getItem('sereia_vip_foto_' + fb.uid) || fb.photoURL || '';
+                        sess = { uid: fb.uid, nome: cName, primeiroNome: pNome, foto: cFoto };
+                        break;
+                      }
+                    }
+                  }
+                }
+              } catch(e) {}
+
+              if (sess && sess.uid) {
+                var avatar = sess.foto ? '<img src="' + sess.foto + '" alt="Foto de perfil">' : '<span style="font-size: 1rem;">👑</span>';
+                parent.innerHTML = 
+                  '<div class="header-user-actions-group">' +
+                    '<div class="notif-menu-container" id="notif-menu-container">' +
+                      '<button class="notif-bell-btn" id="notif-bell-btn" type="button" aria-expanded="false" title="Notificações">' +
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                          '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>' +
+                          '<path d="M13.73 21a2 2 0 0 1-3.46 0"></path>' +
+                        '</svg>' +
+                        '<span class="notif-badge-count" id="notif-badge-count" style="display: none;">0</span>' +
+                      '</button>' +
+                    '</div>' +
+                    '<div class="user-menu-container" id="user-menu-container">' +
+                      '<button class="user-menu-trigger" id="user-menu-trigger" type="button" aria-expanded="false" title="Menu da Conta">' +
+                        '<span class="user-menu-name" id="header-user-display-name">' + (sess.primeiroNome || 'CLIENTE') + '</span>' +
+                        '<span class="user-menu-avatar" id="header-avatar-wrap">' + avatar + '</span>' +
+                        '<span class="user-menu-chevron" id="user-menu-chevron">' +
+                          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+                            '<polyline points="6 9 12 15 18 9"></polyline>' +
+                          '</svg>' +
+                        '</span>' +
+                      '</button>' +
+                    '</div>' +
+                  '</div>';
+              } else {
+                parent.innerHTML = 
+                  '<button class="btn-auth-login" id="btn-login" type="button">Entrar</button>';
+              }
+            })();
+          </script>
+          <noscript>
+            <button class="btn-auth-login" id="btn-login" type="button">Entrar</button>
+          </noscript>
+        </div>
+
+        <!-- Botão Hamburger Mobile -->
+        <button class="mobile-hamburger-btn" id="mobile-hamburger-btn" aria-label="Abrir Menu" type="button" aria-expanded="false">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Menu Lateral Off-Canvas Mobile -->
+  <div class="mobile-nav-drawer" id="mobile-nav-drawer" aria-hidden="true">
+    <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
+    <div class="mobile-drawer-content">
+      <div class="mobile-drawer-header">
+        <div class="brand-text">
+          <span class="brand-title-top gold-gradient-text">SEREIA</span>
+          <span class="brand-title-bottom gold-gradient-text">DOURADA</span>
+        </div>
+        <button class="mobile-drawer-close" id="mobile-drawer-close" type="button" aria-label="Fechar">&times;</button>
+      </div>
+      <ul class="mobile-nav-links">
+        <li><a href="/sereia-dourada-site/" class="mobile-nav-link"><span>🏡</span> Inicial</a></li>
+        <li><a href="/sereia-dourada-site/admin" class="mobile-nav-link active"><span>📋</span> Reservas</a></li>
+        <li><a href="/sereia-dourada-site/contas" class="mobile-nav-link"><span>👥</span> Contas</a></li>
+        <li><a href="/sereia-dourada-site/configuracoes" class="mobile-nav-link"><span>⚙️</span> Configurações</a></li>
+      </ul>
+      <div class="mobile-drawer-footer">
+        <button class="btn-pwa-install" id="btn-pwa-install-mobile" style="display: none;" type="button">
+          <span>📲</span> Instalar Aplicativo
+        </button>
+        <p class="mobile-drawer-copy">© 2026 Sereia Dourada. Painel de Controle.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conteúdo Principal do Painel Admin -->
+  <main class="main-content">
+    <!-- Tela de Verificação Inicial -->
+    <div id="admin-auth-loading" style="text-align: center; padding: 100px 20px;">
+      <div class="logo-badge-mini" style="margin: 0 auto 20px auto; width: 60px; height: 60px;">
+        <img src="/sereia-dourada-site/assets/logo.png" alt="Sereia Dourada" class="nav-logo-img">
+      </div>
+      <h3 class="gold-gradient-text" style="font-family: var(--font-serif); font-size: 1.3rem; margin-bottom: 8px;">
+        VERIFICANDO PERMISSÃO DE ADMINISTRADOR...
+      </h3>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">
+        Consultando privilégios de acesso no Cloud Firestore.
+      </p>
+    </div>
+
+    <!-- Tela de Bloqueio / Acesso Restrito -->
+    <div id="admin-auth-guard" class="admin-access-denied-wrap" style="display: none;">
+      <div class="admin-denied-card">
+        <div class="admin-denied-icon">🔒</div>
+        <div class="luxury-badge" style="margin-bottom: 14px;">
+          <span class="badge-dot">✦</span>
+          <span>ACESSO EXCLUSIVO À ADMINISTRAÇÃO</span>
+          <span class="badge-dot">✦</span>
+        </div>
+        <h2 class="admin-denied-title">ACESSO <span class="gold-gradient-text">NÃO AUTORIZADO</span></h2>
+        <p class="admin-denied-desc" id="admin-denied-message">
+          Esta área é restrita aos administradores da Sereia Dourada. A sua conta atual não possui privilégios de administrador configurados no banco de dados Cloud Firestore.
+        </p>
+        <div class="admin-denied-actions">
+          <a href="/sereia-dourada-site/" class="btn-hero-primary" style="text-decoration: none; padding: 12px 24px;">VOLTAR AO INÍCIO</a>
+          <a href="/sereia-dourada-site/perfil" class="btn-hero-outline" style="text-decoration: none; padding: 12px 24px;">MEU PERFIL</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Conteúdo Completo do Painel Admin (Exibido apenas se for ADM no Firestore) -->
+    <div class="admin-page-wrap" id="admin-dashboard-content" style="display: none;">
+
+      <!-- Cabeçalho do Painel Admin -->
+      <header class="page-intro-header" style="margin-bottom: 30px;">
+        <div class="luxury-badge">
+          <span class="badge-dot">✦</span>
+          <span>ADMINISTRAÇÃO OFICIAL SEREIA DOURADA</span>
+          <span class="badge-dot">✦</span>
+        </div>
+        <h1 class="page-title">
+          PAINEL DE <span class="gold-gradient-text">APROVAÇÃO DE RESERVAS</span>
+        </h1>
+        <p class="page-subtitle">
+          Gerencie e aprove solicitações em tempo real integradas com o Cloud Firestore.
+        </p>
+      </header>
+
+      <!-- Grade de Métricas e Contadores (KPIs) -->
+      <section class="admin-kpi-grid">
+        <div class="admin-kpi-card">
+          <div class="admin-kpi-icon kpi-icon-total">📋</div>
+          <div class="admin-kpi-info">
+            <span class="admin-kpi-num" id="kpi-total">0</span>
+            <span class="admin-kpi-label">Total de Pedidos</span>
+          </div>
+        </div>
+
+        <div class="admin-kpi-card">
+          <div class="admin-kpi-icon kpi-icon-pending">⏳</div>
+          <div class="admin-kpi-info">
+            <span class="admin-kpi-num" id="kpi-pendentes" style="color: #FCD34D;">0</span>
+            <span class="admin-kpi-label">Aguardando Aprovação</span>
+          </div>
+        </div>
+
+        <div class="admin-kpi-card">
+          <div class="admin-kpi-icon kpi-icon-confirmed">✅</div>
+          <div class="admin-kpi-info">
+            <span class="admin-kpi-num" id="kpi-confirmadas" style="color: #6EE7B7;">0</span>
+            <span class="admin-kpi-label">Confirmadas</span>
+          </div>
+        </div>
+
+        <div class="admin-kpi-card">
+          <div class="admin-kpi-icon kpi-icon-canceled">❌</div>
+          <div class="admin-kpi-info">
+            <span class="admin-kpi-num" id="kpi-canceladas" style="color: #FCA5A5;">0</span>
+            <span class="admin-kpi-label">Recusadas / Canceladas</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Barra de Ferramentas: Busca e Filtro de Status -->
+      <section class="admin-toolbar">
+        <div class="admin-search-box">
+          <span>🔍</span>
+          <input type="text" id="admin-search-input" placeholder="Buscar por hóspede, e-mail, WhatsApp ou protocolo...">
+        </div>
+
+        <div class="admin-filter-pills">
+          <button class="admin-filter-pill active" data-filter="todos" type="button">Todas (<span id="count-pill-todos">0</span>)</button>
+          <button class="admin-filter-pill" data-filter="pendente" type="button">Pendentes ⏳ (<span id="count-pill-pendente">0</span>)</button>
+          <button class="admin-filter-pill" data-filter="confirmada" type="button">Confirmadas ✅ (<span id="count-pill-confirmada">0</span>)</button>
+          <button class="admin-filter-pill" data-filter="cancelada" type="button">Canceladas ❌ (<span id="count-pill-cancelada">0</span>)</button>
+          <button class="admin-filter-pill" id="btn-migrar-ids" style="border-color: rgba(212,175,55,0.4); background: rgba(212,175,55,0.12);" type="button" title="Sincroniza documentos para IDs legíveis com o nome do cliente">⚡ Padronizar IDs no Banco</button>
+        </div>
+      </section>
+
+      <!-- Lista Dinâmica de Reservas -->
+      <section id="admin-reservas-container">
+        <div id="admin-loading" style="text-align: center; padding: 50px; color: var(--text-muted); font-size: 1.1rem;">
+          Conectando ao banco de dados Cloud Firestore...
+        </div>
+        <div class="admin-cards-list" id="admin-cards-list" style="display: none;"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Feedback Toast Notificação -->
+  <div id="admin-toast" class="profile-toast" style="display: none;"></div>
+
+  <!-- Rodapé Oficial -->
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <div class="footer-clean-wrapper">
+        <div class="footer-brand-clean">
+          <img src="/sereia-dourada-site/assets/logo.png" alt="Sereia Dourada" class="footer-logo-img">
+          <span class="footer-brand-title">SEREIA DOURADA</span>
+        </div>
+        <p class="footer-copy">© 2026 Sereia Dourada. Painel Administrativo de Gestão.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modal Interativo Entrar / Registrar-se -->
+  <div class="modal-overlay" id="auth-modal" aria-hidden="true">
+    <div class="auth-modal-card">
+      <button class="modal-close" id="auth-close-btn">&times;</button>
+      <div class="logo-badge-mini" style="margin: 0 auto 12px auto;">
+        <img src="/sereia-dourada-site/assets/logo.png" alt="Sereia Dourada" class="nav-logo-img">
+      </div>
+      <h3 class="gold-gradient-text" style="font-family: var(--font-serif); font-size: 1.3rem;">ÁREA RESTRITA</h3>
+      
+      <div class="auth-tabs">
+        <button class="auth-tab-btn active" id="tab-login-btn">Entrar</button>
+        <button class="auth-tab-btn" id="tab-register-btn">Registrar-se</button>
+      </div>
+
+      <form class="auth-form" id="form-login" onsubmit="return false;">
+        <div class="form-group">
+          <label for="login-email">E-mail ou Usuário</label>
+          <input type="email" id="login-email" placeholder="seuemail@exemplo.com" required>
+        </div>
+        <div class="form-group">
+          <label for="login-password">Senha Secreta</label>
+          <div class="password-input-wrap">
+            <input type="password" id="login-password" placeholder="••••••••" required>
+            <button type="button" class="btn-toggle-password" data-target="login-password" aria-label="Mostrar ou ocultar senha" title="Ver senha">
+              <svg class="eye-icon-show" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg class="eye-icon-hide" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn-auth-submit">Acessar Painel</button>
+      </form>
+
+      <form class="auth-form" id="form-register" style="display: none;" onsubmit="return false;">
+        <div class="form-group">
+          <label for="reg-name">Nome Completo</label>
+          <input type="text" id="reg-name" placeholder="Seu nome completo" required>
+        </div>
+        <div class="form-group">
+          <label for="reg-email">E-mail Oficial</label>
+          <input type="email" id="reg-email" placeholder="contato@exemplo.com" required>
+        </div>
+        <div class="form-group">
+          <label for="reg-password">Criar Senha Segura</label>
+          <div class="password-input-wrap">
+            <input type="password" id="reg-password" placeholder="••••••••" required>
+            <button type="button" class="btn-toggle-password" data-target="reg-password" aria-label="Mostrar ou ocultar senha" title="Ver senha">
+              <svg class="eye-icon-show" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <svg class="eye-icon-hide" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn-auth-submit">Criar Minha Conta</button>
+      </form>
+      <!-- Login Social (Google e Facebook) -->
+      <div class="auth-social-wrap" id="auth-social-wrap">
+        <div class="auth-social-divider"><span>ou continue com</span></div>
+        <div class="auth-social-buttons">
+          <button type="button" class="btn-social-auth btn-social-google" id="btn-login-google">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#EA4335" d="M12 10.2v3.9h5.4c-.2 1.3-1.5 3.8-5.4 3.8-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.7 3.3 14.6 2.4 12 2.4 6.7 2.4 2.4 6.7 2.4 12s4.3 9.6 9.6 9.6c5.5 0 9.2-3.9 9.2-9.4 0-.6-.1-1.1-.2-1.6H12z"/>
+              <path fill="#4285F4" d="M21.2 12.2c0-.7-.1-1.4-.2-2H12v3.9h5.4c-.3 1.3-1 2.4-2.2 3.1l3.4 2.6c2-1.8 2.6-4.5 2.6-7.6z"/>
+              <path fill="#FBBC05" d="M6.7 14.4c-.2-.7-.4-1.5-.4-2.4s.2-1.7.4-2.4L3.5 7.1C2.8 8.6 2.4 10.2 2.4 12s.4 3.4 1.1 4.9l3.2-2.5z"/>
+              <path fill="#34A853" d="M12 21.6c2.6 0 4.8-.9 6.4-2.4l-3.4-2.6c-.9.6-2 .9-3 .9-2.4 0-4.4-1.6-5.1-3.8l-3.2 2.5C5.2 19.4 8.3 21.6 12 21.6z"/>
+            </svg>
+            <span>Google</span>
+          </button>
+          <button type="button" class="btn-social-auth btn-social-facebook" id="btn-login-facebook">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#1877F2" d="M24 12.07C24 5.41 18.63 0 12 0S0 5.41 0 12.07c0 6.02 4.39 11.01 10.13 11.93v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.96h-1.51c-1.49 0-1.95.93-1.95 1.88v2.26h3.33l-.53 3.49h-2.8V24C19.61 23.08 24 18.09 24 12.07z"/>
+            </svg>
+            <span>Facebook</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDK Oficial & Configuração -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="/sereia-dourada-site/js/firebase-config.js?v=6"></script>
+  <script src="/sereia-dourada-site/js/app.js?v=6"></script>
+
+  <!-- Lógica Administrativa em Tempo Real -->
+  <script>
+    let todasReservas = [];
+    let filtroAtual = 'todos';
+    let termoBusca = '';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      iniciarPainelAdmin();
+      configurarFiltrosEBusca();
+    });
+
+    function iniciarPainelAdmin() {
+      const authLoading = document.getElementById('admin-auth-loading');
+      const authGuard = document.getElementById('admin-auth-guard');
+      const deniedMessage = document.getElementById('admin-denied-message');
+      const dashboardContent = document.getElementById('admin-dashboard-content');
+
+      if (typeof firebase === 'undefined' || !firebase.auth) {
+        setTimeout(iniciarPainelAdmin, 250);
+        return;
+      }
+
+      firebase.auth().onAuthStateChanged(async (user) => {
+        if (!user) {
+          // Usuário não autenticado
+          if (authLoading) authLoading.style.display = 'none';
+          if (dashboardContent) dashboardContent.style.display = 'none';
+          if (authGuard) {
+            authGuard.style.display = 'block';
+            if (deniedMessage) {
+              deniedMessage.innerHTML = 'Você precisa estar conectado a uma conta com privilégios de administrador para acessar o Painel de Gestão de Reservas.<br><br>Faça login na barra superior para continuar.';
+            }
+          }
+          return;
+        }
+
+        // Consulta estrita ao documento do usuário no Cloud Firestore
+        try {
+          let perfil = null;
+          if (window.obterPerfilUsuarioVIP) {
+            perfil = await window.obterPerfilUsuarioVIP(user.uid);
+          }
+
+          const isAdm = typeof window.verificarUsuarioAdmin === 'function' 
+            ? window.verificarUsuarioAdmin(user, perfil) 
+            : false;
+
+          if (!isAdm) {
+            // Conta de cliente normal (sem permissão de ADM no Firestore)
+            if (authLoading) authLoading.style.display = 'none';
+            if (dashboardContent) dashboardContent.style.display = 'none';
+            if (authGuard) {
+              authGuard.style.display = 'block';
+              if (deniedMessage) {
+                deniedMessage.innerHTML = `A conta conectada (<strong>${escapeHtml(user.email || '')}</strong>) é uma conta de cliente e não possui autorização no banco de dados.<br><br>Para liberar o acesso, adicione o campo <code>isAdmin: true</code> ou altere o campo <code>perfil</code> para <code>"admin"</code> no documento desta conta no Cloud Firestore.`;
+              }
+            }
+            return;
+          }
+
+          // Acesso autorizado com sucesso pelo Firestore!
+          if (authLoading) authLoading.style.display = 'none';
+          if (authGuard) authGuard.style.display = 'none';
+          if (dashboardContent) dashboardContent.style.display = 'block';
+
+          // Conexão em tempo real (onSnapshot) com a coleção 'reservas'
+          const loadingEl = document.getElementById('admin-loading');
+          const cardsList = document.getElementById('admin-cards-list');
+
+          // Botão manual e rotina automática de padronização de IDs no Firestore
+          const btnMigrar = document.getElementById('btn-migrar-ids');
+          if (btnMigrar) {
+            btnMigrar.onclick = async () => {
+              btnMigrar.textContent = 'Padronizando IDs...';
+              const res = await window.migrarDadosParaIdsLegiveis();
+              if (res && res.ok) {
+                mostrarToast(`✦ IDs atualizados com sucesso no Firestore!`, 'success');
+              } else {
+                mostrarToast(`Erro ao atualizar IDs: ${res.error || 'Falha'}`, 'error');
+              }
+              btnMigrar.textContent = '⚡ Padronizar IDs no Banco';
+            };
+          }
+
+          // Executa migração automática uma vez se autorizado
+          if (typeof window.migrarDadosParaIdsLegiveis === 'function') {
+            window.migrarDadosParaIdsLegiveis().catch(() => {});
+          }
+
+          window.escutarTodasReservasAdmin((reservas) => {
+            todasReservas = reservas || [];
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (cardsList) cardsList.style.display = 'flex';
+            atualizarKPIs();
+            renderizarReservas();
+          });
+        } catch (err) {
+          console.error("Erro ao validar permissões do admin:", err);
+          if (authLoading) authLoading.style.display = 'none';
+          if (authGuard) authGuard.style.display = 'block';
+        }
+      });
+    }
+
+    function atualizarKPIs() {
+      const total = todasReservas.length;
+      const pendentes = todasReservas.filter(r => (r.status || 'pendente') === 'pendente').length;
+      const confirmadas = todasReservas.filter(r => r.status === 'confirmada').length;
+      const canceladas = todasReservas.filter(r => r.status === 'cancelada').length;
+
+      document.getElementById('kpi-total').textContent = total;
+      document.getElementById('kpi-pendentes').textContent = pendentes;
+      document.getElementById('kpi-confirmadas').textContent = confirmadas;
+      document.getElementById('kpi-canceladas').textContent = canceladas;
+
+      document.getElementById('count-pill-todos').textContent = total;
+      document.getElementById('count-pill-pendente').textContent = pendentes;
+      document.getElementById('count-pill-confirmada').textContent = confirmadas;
+      document.getElementById('count-pill-cancelada').textContent = canceladas;
+    }
+
+    function configurarFiltrosEBusca() {
+      const searchInput = document.getElementById('admin-search-input');
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          termoBusca = (e.target.value || '').trim().toLowerCase();
+          renderizarReservas();
+        });
+      }
+
+      const filterButtons = document.querySelectorAll('.admin-filter-pill');
+      filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          filterButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          filtroAtual = btn.getAttribute('data-filter') || 'todos';
+          renderizarReservas();
+        });
+      });
+    }
+
+    function renderizarReservas() {
+      const container = document.getElementById('admin-cards-list');
+      if (!container) return;
+
+      const iconesEspacos = {
+        pousada: '🏡',
+        camping: '⛺',
+        restaurante: '🍽️'
+      };
+
+      const titulosEspacos = {
+        pousada: 'Quartos Aconchegantes (Pousada)',
+        camping: 'Área de Camping & Glamping',
+        restaurante: 'Mesa no Restaurante Exclusivo'
+      };
+
+      // Aplica filtros de status e busca
+      let filtradas = todasReservas.filter(res => {
+        const status = res.status || 'pendente';
+        if (filtroAtual !== 'todos' && status !== filtroAtual) return false;
+
+        if (termoBusca) {
+          const haystack = `${res.nome || ''} ${res.email || ''} ${res.whatsapp || ''} ${res.id || ''} ${res.espaco || ''}`.toLowerCase();
+          if (!haystack.includes(termoBusca)) return false;
+        }
+
+        return true;
+      });
+
+      if (filtradas.length === 0) {
+        container.innerHTML = `
+          <div class="reservas-empty-box" style="background: rgba(9, 20, 46, 0.6); border: 1px dashed rgba(212,175,55,0.3); border-radius: 16px;">
+            <div class="reservas-empty-icon">⚜</div>
+            <h4 style="font-family: var(--font-serif); font-size: 1.2rem; color: #FFFFFF; margin-bottom: 6px;">
+              Nenhum pedido encontrado
+            </h4>
+            <p class="reservas-empty-text">
+              Não encontramos solicitações de reserva para os critérios selecionados.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = '';
+      filtradas.forEach(res => {
+        const status = res.status || 'pendente';
+        const icone = iconesEspacos[res.espaco] || '⚜';
+        const nomeEspaco = titulosEspacos[res.espaco] || 'Experiência Sereia Dourada';
+
+        let badgeClass = 'status-pendente';
+        let badgeTexto = 'Pendente ⏳';
+        let borderClass = 'status-border-pendente';
+
+        if (status === 'confirmada') {
+          badgeClass = 'status-confirmada';
+          badgeTexto = 'Confirmada ✅';
+          borderClass = 'status-border-confirmada';
+        } else if (status === 'cancelada') {
+          badgeClass = 'status-cancelada';
+          badgeTexto = 'Cancelada ❌';
+          borderClass = 'status-border-cancelada';
+        }
+
+        // WhatsApp Link direto
+        let cleanWhats = (res.whatsapp || '').replace(/\D/g, '');
+        if (cleanWhats && !cleanWhats.startsWith('55')) {
+          cleanWhats = '55' + cleanWhats;
+        }
+        const primeiroNome = (res.nome || 'Cliente').trim().split(/\s+/)[0];
+        const msgWhats = encodeURIComponent(`Olá ${primeiroNome}, falamos da Pousada & Restaurante Sereia Dourada a respeito do seu pedido de reserva #${res.id}!`);
+        const whatsUrl = cleanWhats ? `https://wa.me/${cleanWhats}?text=${msgWhats}` : '#';
+
+        const card = document.createElement('article');
+        card.className = `admin-reserva-card ${borderClass}`;
+        card.id = `card-reserva-${res.id}`;
+
+        card.innerHTML = `
+          <div class="admin-card-top">
+            <div class="admin-card-header-info">
+              <div class="admin-space-badge-icon">${icone}</div>
+              <div>
+                <h3 class="admin-card-guest-name">${escapeHtml(res.nome || 'Hóspede Não Identificado')}</h3>
+                <div class="admin-card-space-name">${nomeEspaco}</div>
+              </div>
+            </div>
+
+            <div class="admin-card-top-right">
+              <span class="reserva-status-badge ${badgeClass}">${badgeTexto}</span>
+              <span class="reserva-protocolo-text">Protocolo: #${escapeHtml(res.id)}</span>
+            </div>
+          </div>
+
+          <div class="admin-card-details-grid">
+            <div class="admin-detail-item">
+              <span class="admin-detail-label">Entrada (Check-in)</span>
+              <span class="admin-detail-value">📅 ${formatarData(res.checkin)}</span>
+            </div>
+
+            <div class="admin-detail-item">
+              <span class="admin-detail-label">Saída (Check-out)</span>
+              <span class="admin-detail-value">🛫 ${formatarData(res.checkout) || 'Não informado'}</span>
+            </div>
+
+            <div class="admin-detail-item">
+              <span class="admin-detail-label">Total de Hóspedes</span>
+              <span class="admin-detail-value">👥 ${escapeHtml(res.hospedes || 2)} pessoa(s)</span>
+            </div>
+
+            <div class="admin-detail-item">
+              <span class="admin-detail-label">Ocasião Especial</span>
+              <span class="admin-detail-value">✨ ${res.ocasiao ? escapeHtml(capitalizar(res.ocasiao)) : 'Lazer'}</span>
+            </div>
+
+            <div class="admin-detail-item">
+              <span class="admin-detail-label">E-mail do Cliente</span>
+              <span class="admin-detail-value">
+                <a href="mailto:${escapeHtml(res.email || '')}" title="Enviar E-mail">${escapeHtml(res.email || 'Não informado')}</a>
+              </span>
+            </div>
+
+            <div class="admin-detail-item">
+              <span class="admin-detail-label">Telefone / WhatsApp</span>
+              <span class="admin-detail-value">${escapeHtml(res.whatsapp || 'Não informado')}</span>
+            </div>
+          </div>
+
+          ${res.observacoes ? `
+            <div style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.85rem; color: var(--text-secondary);">
+              <strong>📝 Observações do Cliente:</strong> "${escapeHtml(res.observacoes)}"
+            </div>
+          ` : ''}
+
+          <div class="admin-card-actions">
+            <div class="admin-actions-left">
+              ${status !== 'confirmada' ? `
+                <button class="btn-admin-action btn-admin-approve" onclick="alterarStatus('${escapeHtml(res.id)}', 'confirmada')" type="button">
+                  ✅ Aprovar Reserva
+                </button>
+              ` : ''}
+
+              ${status !== 'cancelada' ? `
+                <button class="btn-admin-action btn-admin-reject" onclick="alterarStatus('${escapeHtml(res.id)}', 'cancelada')" type="button">
+                  ❌ Recusar Pedido
+                </button>
+              ` : ''}
+
+              ${status !== 'pendente' ? `
+                <button class="btn-admin-action btn-admin-pending" onclick="alterarStatus('${escapeHtml(res.id)}', 'pendente')" type="button">
+                  ⏳ Marcar Pendente
+                </button>
+              ` : ''}
+            </div>
+
+            ${cleanWhats ? `
+              <a href="${whatsUrl}" target="_blank" rel="noopener noreferrer" class="btn-admin-whatsapp">
+                <span>💬</span> WhatsApp do Hóspede
+              </a>
+            ` : ''}
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    async function alterarStatus(reservaId, novoStatus) {
+      const labels = {
+        confirmada: 'aprovada com sucesso! O cliente já pode ver o status confirmado no perfil.',
+        cancelada: 'recusada/cancelada.',
+        pendente: 'marcada como pendente novamente.'
+      };
+
+      try {
+        if (!window.atualizarStatusReserva) {
+          throw new Error('Função de atualização indisponível.');
+        }
+
+        mostrarToast(`Atualizando reserva #${reservaId}...`, 'info');
+        await window.atualizarStatusReserva(reservaId, novoStatus);
+        mostrarToast(`✦ Reserva ${labels[novoStatus]}`, 'success');
+      } catch (err) {
+        console.error('Erro ao atualizar status da reserva:', err);
+        mostrarToast('Erro ao atualizar reserva: ' + (err.message || 'Falha de conexão'), 'error');
+      }
+    }
+
+    function mostrarToast(mensagem, tipo = 'success') {
+      const toast = document.getElementById('admin-toast');
+      if (!toast) return;
+
+      toast.textContent = mensagem;
+      toast.className = `profile-toast ${tipo}`;
+      toast.style.display = 'block';
+
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 3500);
+    }
+
+    function formatarData(dataStr) {
+      if (!dataStr) return null;
+      if (dataStr.includes('/')) return dataStr;
+      const partes = dataStr.split('-');
+      if (partes.length === 3) {
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+      }
+      return dataStr;
+    }
+
+    function capitalizar(str) {
+      if (!str) return '';
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+
+</html>
