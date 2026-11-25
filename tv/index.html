@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1920, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Sereia Dourada TV — Painel de Mercado (Ofertas, Preços &amp; Senhas)</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="tv-root" class="tv-root">
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="brand-block">
+        <img id="brand-logo" src="logo.png" alt="Sereia Dourada" class="brand-logo" />
+        <div>
+          <div class="brand-title-row">
+            <h1 class="brand-title">SEREIA DOURADA</h1>
+            <span id="mode-badge" class="mode-badge">OFERTAS &amp; PREÇOS</span>
+          </div>
+          <div class="brand-sub-row">
+            <span id="sync-dot" class="sync-dot"></span>
+            <span id="sync-label" class="sync-label">CATÁLOGO LOCAL • SMART TV v1.0.0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <div class="remote-actions">
+          <button type="button" class="tv-btn" data-tv-focus id="btn-mode">🔴 TROCAR MODO</button>
+          <button type="button" class="tv-btn" data-tv-focus id="btn-pause">🟡 PAUSAR</button>
+          <button type="button" class="tv-btn tv-btn-primary" data-tv-focus id="btn-menu">🔵 MENU TV</button>
+        </div>
+        <div class="clock-box">
+          <div id="clock-time" class="clock-time">00:00:00</div>
+          <div id="clock-date" class="clock-date">--/--</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- OTA BANNER -->
+    <div id="ota-banner" class="ota-banner hidden">
+      <span id="ota-banner-text">Verificando atualizações OTA...</span>
+      <div class="ota-banner-actions">
+        <button type="button" class="tv-btn tv-btn-primary tv-btn-sm hidden" data-tv-focus id="btn-ota-apply">ATUALIZAR AGORA</button>
+        <button type="button" class="tv-btn tv-btn-sm" data-tv-focus id="btn-ota-close">FECHAR</button>
+      </div>
+    </div>
+
+    <!-- MAIN STAGE -->
+    <main class="stage">
+      <!-- MODE 1: MERCADO (OFERTAS + PRECOS) -->
+      <section id="view-mercado" class="split-layout">
+        <article class="spotlight-card">
+          <div class="spotlight-ribbon">
+            <span id="spot-badge">⚡ OFERTA DO DIA</span>
+            <span id="spot-discount" class="discount-pill">-15% OFF</span>
+          </div>
+
+          <div class="spotlight-body">
+            <div class="spot-meta">
+              <span id="spot-category" class="spot-category">RESTAURANTE</span>
+              <span id="spot-code" class="spot-code">#101</span>
+            </div>
+
+            <h2 id="spot-name" class="spot-name">Camarão Dourado na Manteiga</h2>
+            <p id="spot-desc" class="spot-desc">Camarões selecionados salteados na manteiga de ervas e toque cítrico.</p>
+
+            <div class="spot-price-box">
+              <div class="spot-price-top">
+                <span id="spot-old-price" class="spot-old-price">DE R$ 128,00</span>
+                <span id="spot-unit" class="spot-unit">Porção 450g</span>
+              </div>
+              <div class="spot-big-price">
+                <span class="spot-currency">R$</span>
+                <span id="spot-reais" class="spot-reais">109</span>
+                <div class="spot-cents-col">
+                  <span id="spot-cents" class="spot-cents">,90</span>
+                  <span id="spot-save" class="spot-save">ECONOMIZE R$ 18,10</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="spotlight-footer">
+            <div class="progress-track">
+              <div id="spot-progress" class="progress-fill"></div>
+            </div>
+            <div class="spot-footer-row">
+              <span id="spot-counter" class="spot-counter">OFERTA 1 DE 10</span>
+              <div class="spot-nav">
+                <button type="button" class="tv-btn tv-btn-sm" data-tv-focus id="btn-prev-offer">◀ ANTERIOR</button>
+                <button type="button" class="tv-btn tv-btn-sm" data-tv-focus id="btn-next-offer">PRÓXIMA ▶</button>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="board-card">
+          <div class="board-header">
+            <div class="board-header-left">
+              <span class="board-accent"></span>
+              <div>
+                <div class="board-kicker">TABELA DE PREÇOS • SETOR</div>
+                <div id="board-sector-title" class="board-title">RESTAURANTE</div>
+              </div>
+            </div>
+            <div class="board-header-right">
+              <div id="board-sector-chips" class="sector-chips"></div>
+              <span id="board-page" class="board-page"></span>
+            </div>
+          </div>
+          <div id="board-list" class="board-list"></div>
+        </article>
+      </section>
+
+      <!-- MODE 2: TABELA TELA CHEIA (2 COLUNAS) -->
+      <section id="view-tabela" class="full-board-layout hidden">
+        <article class="board-card">
+          <div class="board-header">
+            <div class="board-header-left">
+              <span class="board-accent"></span>
+              <div>
+                <div class="board-kicker">TABELA DE PREÇOS TELA CHEIA • SETOR</div>
+                <div id="full-sector-title" class="board-title">RESTAURANTE</div>
+              </div>
+            </div>
+            <div class="board-header-right">
+              <div id="full-sector-chips" class="sector-chips"></div>
+              <span id="full-page" class="board-page"></span>
+            </div>
+          </div>
+          <div class="board-two-cols">
+            <div id="full-col-left" class="board-list"></div>
+            <div id="full-col-right" class="board-list"></div>
+          </div>
+        </article>
+      </section>
+
+      <!-- MODE 3: PAINEL DE SENHAS / CAIXAS -->
+      <section id="view-senhas" class="queue-layout hidden">
+        <article class="queue-main">
+          <div class="queue-header">
+            <span>🔔 ATENDIMENTO &amp; CHAMADA DE SENHAS</span>
+            <span class="live-pill">AO VIVO</span>
+          </div>
+          <div class="queue-body">
+            <div class="queue-kicker">SENHA / PEDIDO ATUAL</div>
+            <div id="queue-ticket-box" class="queue-ticket-box">
+              <span id="queue-ticket-code">A-001</span>
+            </div>
+            <div class="queue-counter-banner">
+              <span class="queue-counter-kicker">DIRIJA-SE AO</span>
+              <span id="queue-counter-name" class="queue-counter-name">CAIXA 01</span>
+            </div>
+          </div>
+          <div class="queue-controls">
+            <button type="button" class="tv-btn tv-btn-primary" data-tv-focus id="btn-call-next">🟢 CHAMAR PRÓXIMA SENHA</button>
+            <button type="button" class="tv-btn" data-tv-focus id="btn-next-counter">TROCAR CAIXA / BALCÃO</button>
+            <button type="button" class="tv-btn tv-btn-sm" data-tv-focus id="btn-repeat-ticket">REPETIR</button>
+            <button type="button" class="tv-btn tv-btn-danger tv-btn-sm" data-tv-focus id="btn-reset-tickets">ZERAR</button>
+          </div>
+        </article>
+
+        <aside class="queue-side">
+          <div class="queue-history-card">
+            <div class="queue-history-title">ÚLTIMAS CHAMADAS</div>
+            <div id="queue-history-list" class="queue-history-list">
+              <p class="queue-empty">Pressione "CHAMAR PRÓXIMA SENHA" ou o botão VERDE do controle remoto.</p>
+            </div>
+          </div>
+          <div class="queue-mini-offer">
+            <div class="mini-offer-kicker">⚡ OFERTA ENQUANTO VOCÊ AGUARDA</div>
+            <div id="queue-offer-name" class="mini-offer-name">Camarão Dourado na Manteiga</div>
+            <div id="queue-offer-price" class="mini-offer-price">R$ 109,90</div>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <!-- TICKER RODAPÉ -->
+    <footer class="ticker-bar">
+      <div class="ticker-label">AVISOS</div>
+      <div class="ticker-track">
+        <div id="ticker-content" class="ticker-content">
+          BEM-VINDO À SEREIA DOURADA — OFERTAS ESPECIAIS TODOS OS DIAS! ★ ACEITAMOS PIX, CRÉDITO, DÉBITO E DINHEIRO
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- MODAL DE CONFIGURAÇÕES DO CONTROLE REMOTO -->
+  <div id="menu-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">⚙ CONFIGURAÇÕES DO PAINEL SMART TV</h2>
+          <p id="modal-subtitle" class="modal-subtitle">Sereia Dourada TV v1.0.0 • Use as setas e OK do controle remoto</p>
+        </div>
+        <button type="button" class="tv-btn tv-btn-danger tv-btn-sm" data-tv-focus id="btn-close-menu">FECHAR</button>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-label">1. MODO DE EXIBIÇÃO DA TV</div>
+        <div class="modal-btn-row">
+          <button type="button" class="tv-btn" data-tv-focus data-set-mode="mercado">OFERTAS + PREÇOS (MERCADO)</button>
+          <button type="button" class="tv-btn" data-tv-focus data-set-mode="tabela">TABELA DE PREÇOS TELA CHEIA</button>
+          <button type="button" class="tv-btn" data-tv-focus data-set-mode="senhas">PAINEL DE SENHAS / CAIXAS</button>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-label">2. SETOR / CATEGORIA EM EXIBIÇÃO</div>
+        <div id="modal-sector-row" class="modal-btn-row"></div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-label">3. TEMPO DE TROCA &amp; ATUALIZAÇÃO OTA</div>
+        <div class="modal-btn-row">
+          <button type="button" class="tv-btn tv-btn-sm" data-tv-focus data-set-speed="6">6s</button>
+          <button type="button" class="tv-btn tv-btn-sm" data-tv-focus data-set-speed="10">10s</button>
+          <button type="button" class="tv-btn tv-btn-sm" data-tv-focus data-set-speed="15">15s</button>
+          <button type="button" class="tv-btn tv-btn-sm" data-tv-focus data-set-speed="30">30s</button>
+          <button type="button" class="tv-btn tv-btn-sm" data-tv-focus id="btn-toggle-auto-ota">✓ OTA AUTOMÁTICO: LIGADO</button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="tv-btn tv-btn-primary" data-tv-focus id="btn-check-ota">🔄 VERIFICAR E ATUALIZAR AGORA (OTA)</button>
+        <div class="remote-hint">Atalhos Controle: 🔴 Modo • 🟢 Próx. Oferta/Senha • 🟡 Pausar • 🔵 Menu</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tizen WebAPIs (ignorado automaticamente fora de TVs Samsung) -->
+  <script type="text/javascript" src="$WEBAPIS/webapis/webapis.js"></script>
+  <!-- Firebase compat (assíncrono — funciona offline com fallback automático) -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>
