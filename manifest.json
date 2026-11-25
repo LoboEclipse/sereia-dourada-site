@@ -1,0 +1,27 @@
+{
+  "name": "Sereia Dourada - Resort & Gastronomia",
+  "short_name": "Sereia Dourada",
+  "description": "Experiência de alto luxo à beira-mar com quartos aconchegantes, camping exclusivo e alta gastronomia.",
+  "start_url": "/sereia-dourada-site/",
+  "id": "/sereia-dourada-site/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#050C1A",
+  "theme_color": "#050C1A",
+  "icons": [
+    {
+      "src": "/sereia-dourada-site/assets/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/sereia-dourada-site/assets/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["travel", "hospitality", "food"],
+  "lang": "pt-BR"
+}

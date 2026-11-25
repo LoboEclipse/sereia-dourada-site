@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Configurações do Site | Sereia Dourada</title>
+  <meta name="description" content="Painel oficial de configurações do site Sereia Dourada. Edição de espaços da reserva, cardápio e WhatsApp de suporte.">
+  
+  <!-- Favicon Oficial -->
+  <link rel="icon" type="image/png" href="/sereia-dourada-site/assets/logo.png">
+
+  <!-- Progressive Web App (PWA) -->
+  <link rel="manifest" href="/sereia-dourada-site/manifest.json">
+  <meta name="theme-color" content="#050C1A">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Sereia Dourada">
+  <link rel="apple-touch-icon" href="/sereia-dourada-site/assets/logo.png">
+
+  <!-- Google Fonts Oficiais -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Estilos Globais -->
+  <link rel="stylesheet" href="/sereia-dourada-site/css/styles.css?v=6">
+  
+  <!-- Prevenção imediata de FOUC / flash de botões para usuários autenticados -->
+  <script>
+    (function() {
+      try {
+        var hasSess = localStorage.getItem('sereia_auth_session');
+        if (!hasSess) {
+          for (var i = 0; i < localStorage.length; i++) {
+            var k = localStorage.key(i);
+            if (k && k.indexOf('firebase:authUser:') === 0) { hasSess = true; break; }
+          }
+        }
+        if (hasSess) document.documentElement.classList.add('auth-session-active');
+      } catch(e) {}
+    })();
+  </script>
+</head>
+
+<body>
+  <!-- Canvas de Partículas Douradas -->
+  <canvas id="particles-canvas"></canvas>
+
+  <!-- Barra de Cima (Header) -->
+  <header class="site-header" id="site-header">
+    <div class="header-inner">
+      <!-- Canto Esquerdo: Logo e Nome -->
+      <a href="/sereia-dourada-site/" class="brand-logo" id="header-logo">
+        <div class="logo-badge-mini">
+          <img src="/sereia-dourada-site/assets/logo.png" alt="Sereia Dourada Logotipo Oficial" class="nav-logo-img">
+        </div>
+        <div class="brand-text">
+          <span class="brand-title-top gold-gradient-text">SEREIA</span>
+          <span class="brand-title-bottom gold-gradient-text">DOURADA</span>
+        </div>
+      </a>
+
+      <!-- Meio da Barra: Links Centrais do Painel Administrativo -->
+      <nav class="nav-center-wrap">
+        <ul class="nav-center">
+          <li><a href="/sereia-dourada-site/" class="nav-link">Inicial</a></li>
+          <li><a href="/sereia-dourada-site/admin" class="nav-link">Reservas</a></li>
+          <li><a href="/sereia-dourada-site/contas" class="nav-link">Contas</a></li>
+          <li><a href="/sereia-dourada-site/configuracoes" class="nav-link active">Configurações</a></li>
+        </ul>
+      </nav>
+
+      <!-- Canto Direito: Ações & Menu Mobile -->
+      <div class="header-right-wrap">
+        <div class="header-actions">
+          <script>
+            (function() {
+              var parent = document.currentScript.parentElement;
+              var sess = null;
+              try {
+                sess = JSON.parse(localStorage.getItem('sereia_auth_session'));
+                if (!sess || !sess.uid) {
+                  for (var i = 0; i < localStorage.length; i++) {
+                    var k = localStorage.key(i);
+                    if (k && k.indexOf('firebase:authUser:') === 0) {
+                      var fb = JSON.parse(localStorage.getItem(k));
+                      if (fb && fb.uid) {
+                        var cName = localStorage.getItem('sereia_vip_nome_' + fb.uid) || fb.displayName || (fb.email ? fb.email.split('@')[0] : 'CLIENTE');
+                        var pNome = cName.trim().split(/\s+/)[0].toUpperCase();
+                        var cFoto = localStorage.getItem('sereia_vip_foto_' + fb.uid) || fb.photoURL || '';
+                        sess = { uid: fb.uid, nome: cName, primeiroNome: pNome, foto: cFoto };
+                        break;
+                      }
+                    }
+                  }
+                }
+              } catch(e) {}
+
+              if (sess && sess.uid) {
+                var avatar = sess.foto ? '<img src="' + sess.foto + '" alt="Foto de perfil">' : '<span style="font-size: 1rem;">👑</span>';
+                parent.innerHTML = 
+                  '<div class="header-user-actions-group">' +
+                    '<div class="notif-menu-container" id="notif-menu-container">' +
+                      '<button class="notif-bell-btn" id="notif-bell-btn" type="button" aria-expanded="false" title="Notificações">' +
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                          '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>' +
+                          '<path d="M13.73 21a2 2 0 0 1-3.46 0"></path>' +
+                        '</svg>' +
+                        '<span class="notif-badge-count" id="notif-badge-count" style="display: none;">0</span>' +
+                      '</button>' +
+                    '</div>' +
+                    '<div class="user-menu-container" id="user-menu-container">' +
+                      '<button class="user-menu-trigger" id="user-menu-trigger" type="button" aria-expanded="false" title="Menu da Conta">' +
+                        '<span class="user-menu-name" id="header-user-display-name">' + (sess.primeiroNome || 'CLIENTE') + '</span>' +
+                        '<span class="user-menu-avatar" id="header-avatar-wrap">' + avatar + '</span>' +
+                        '<span class="user-menu-chevron" id="user-menu-chevron">' +
+                          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+                            '<polyline points="6 9 12 15 18 9"></polyline>' +
+                          '</svg>' +
+                        '</span>' +
+                      '</button>' +
+                    '</div>' +
+                  '</div>';
+              } else {
+                parent.innerHTML = 
+                  '<button class="btn-auth-login" id="btn-login" type="button">Entrar</button>';
+              }
+            })();
+          </script>
+          <noscript>
+            <button class="btn-auth-login" id="btn-login" type="button">Entrar</button>
+          </noscript>
+        </div>
+
+        <!-- Botão Hamburger Mobile -->
+        <button class="mobile-hamburger-btn" id="mobile-hamburger-btn" aria-label="Abrir Menu" type="button" aria-expanded="false">
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+          <span class="hamburger-bar"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Menu Lateral Off-Canvas Mobile -->
+  <div class="mobile-nav-drawer" id="mobile-nav-drawer" aria-hidden="true">
+    <div class="mobile-drawer-backdrop" id="mobile-drawer-backdrop"></div>
+    <div class="mobile-drawer-content">
+      <div class="mobile-drawer-header">
+        <div class="brand-text">
+          <span class="brand-title-top gold-gradient-text">SEREIA</span>
+          <span class="brand-title-bottom gold-gradient-text">DOURADA</span>
+        </div>
+        <button class="mobile-drawer-close" id="mobile-drawer-close" type="button" aria-label="Fechar">&times;</button>
+      </div>
+      <ul class="mobile-nav-links">
+        <li><a href="/sereia-dourada-site/" class="mobile-nav-link"><span>🏡</span> Inicial</a></li>
+        <li><a href="/sereia-dourada-site/admin" class="mobile-nav-link"><span>📋</span> Reservas</a></li>
+        <li><a href="/sereia-dourada-site/contas" class="mobile-nav-link"><span>👥</span> Contas</a></li>
+        <li><a href="/sereia-dourada-site/configuracoes" class="mobile-nav-link active"><span>⚙️</span> Configurações</a></li>
+      </ul>
+      <div class="mobile-drawer-footer">
+        <button class="btn-pwa-install" id="btn-pwa-install-mobile" style="display: none;" type="button">
+          <span>📲</span> Instalar Aplicativo
+        </button>
+        <p class="mobile-drawer-copy">© 2026 Sereia Dourada. Painel de Controle.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conteúdo Principal de Configurações -->
+  <main class="main-content">
+
+    <!-- Estado 1: Verificando Acesso Administrativo -->
+    <div id="config-auth-loading" style="text-align: center; padding: 120px 20px;">
+      <div style="font-size: 2.2rem; margin-bottom: 16px; animation: pulse 1.5s infinite;">👑</div>
+      <h2 style="color: var(--gold-light); font-family: var(--font-serif); font-size: 1.35rem; letter-spacing: 1px;">
+        Verificando Credenciais Administrativas...
+      </h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 8px;">
+        Conectando com segurança ao Cloud Firestore
+      </p>
+    </div>
+
+    <!-- Estado 2: Acesso Negado -->
+    <div id="config-auth-guard" class="container" style="display: none; max-width: 650px; padding: 80px 20px;">
+      <div class="admin-denied-card">
+        <div class="admin-denied-icon">🔒</div>
+        <h2 class="admin-denied-title">Área Restrita aos Administradores</h2>
+        <div id="config-denied-message" class="admin-denied-desc">
+          Você precisa estar autenticado com uma conta de administrador para alterar configurações do site.
+        </div>
+        <div class="admin-denied-actions">
+          <a href="/sereia-dourada-site/" class="btn-auth-register" style="display: inline-block;">Retornar ao Início</a>
+          <button id="btn-open-login-from-guard" class="btn-auth-login" type="button">Entrar com Conta Admin</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado 3: Painel de Configurações Liberado -->
+    <div id="config-dashboard-content" class="admin-page-wrap" style="display: none; width: 100%;">
+      
+      <!-- Cabeçalho -->
+      <section class="admin-header-hero" style="text-align: center; margin-bottom: 34px;">
+        <div class="luxury-badge" style="margin-bottom: 14px;">
+          <span class="badge-dot">✦</span>
+          <span>ADMINISTRAÇÃO OFICIAL SEREIA DOURADA</span>
+          <span class="badge-dot">✦</span>
+        </div>
+        <h1 class="admin-main-title" style="font-family: var(--font-serif); font-size: 2.2rem; font-weight: 900; color: #FFFFFF; text-transform: uppercase;">
+          PAINEL DE <span class="gold-gradient-text">CONFIGURAÇÕES DO SITE</span>
+        </h1>
+        <p class="admin-sub-title" style="color: var(--text-secondary); max-width: 680px; margin: 10px auto 0; font-size: 0.95rem; line-height: 1.6;">
+          Edite as fotos e descrições dos espaços de reserva, personalize os pratos do cardápio e configure o número oficial de WhatsApp para tickets.
+        </p>
+      </section>
+
+      <!-- Navegação por Abas -->
+      <div class="config-tabs-nav">
+        <button class="config-tab-btn active" data-tab="tab-espacos" type="button">🏡 Espaços da Reserva</button>
+        <button class="config-tab-btn" data-tab="tab-cardapio" type="button">🍽️ Cardápio & Pratos</button>
+        <button class="config-tab-btn" data-tab="tab-suporte" type="button">💬 Suporte & WhatsApp</button>
+        <button class="config-tab-btn" data-tab="tab-avaliacoes" type="button">⭐ Avaliações dos Clientes</button>
+      </div>
+
+      <!-- ================= ABA 1: ESPAÇOS DA RESERVA ================= -->
+      <section id="tab-espacos" class="config-tab-content">
+        <form id="form-config-espacos" onsubmit="salvarEspacos(event);">
+          
+          <!-- Espaço 1: Pousada -->
+          <div class="config-card-box">
+            <div class="config-card-box-header">
+              <h3 class="config-box-title">🏡 Espaço 1: Quartos da Pousada</h3>
+              <span class="badge-role-admin" style="font-size: 0.75rem; padding: 3px 10px;">ID: pousada</span>
+            </div>
+            <div class="config-grid-2col">
+              <div>
+                <div class="ticket-form-group">
+                  <label class="config-input-label">Título do Espaço</label>
+                  <input type="text" id="espaco-pousada-titulo" class="config-input" value="🏡 Quartos Aconchegantes" required>
+                </div>
+                <div class="ticket-form-group">
+                  <label class="config-input-label">URL da Foto / Imagem</label>
+                  <input type="text" id="espaco-pousada-foto" class="config-input" value="assets/pousada.jpg" oninput="atualizarPreview('espaco-pousada-foto', 'preview-pousada')" required>
+                </div>
+                <div class="ticket-form-group">
+                  <label class="config-input-label">Descrição do Espaço</label>
+                  <textarea id="espaco-pousada-desc" class="ticket-textarea" required>Cama king-size, ar-condicionado, arquitetura rústica refinada, vista para o jardim privativo e café da manhã artesanal incluso.</textarea>
+                </div>
+              </div>
+              <div>
+                <label class="config-input-label">Pré-visualização da Foto</label>
+                <img id="preview-pousada" src="/sereia-dourada-site/assets/pousada.jpg" alt="Preview Pousada" class="config-img-preview" onerror="this.src="/sereia-dourada-site/assets/pousada.jpg'">
+              </div>
+            </div>
+          </div>
+
+          <!-- Espaço 2: Camping -->
+          <div class="config-card-box">
+            <div class="config-card-box-header">
+              <h3 class="config-box-title">⛺ Espaço 2: Área de Camping & Glamping</h3>
+              <span class="badge-role-admin" style="font-size: 0.75rem; padding: 3px 10px;">ID: camping</span>
+            </div>
+            <div class="config-grid-2col">
+              <div>
+                <div class="ticket-form-group">
+                  <label class="config-input-label">Título do Espaço</label>
+                  <input type="text" id="espaco-camping-titulo" class="config-input" value="⛺ Área de Camping & Glamping" required>
+                </div>
+                <div class="ticket-form-group">
+                  <label class="config-input-label">URL da Foto / Imagem</label>
+                  <input type="text" id="espaco-camping-foto" class="config-input" value="assets/camping.jpg" oninput="atualizarPreview('espaco-camping-foto', 'preview-camping')" required>
+                </div>
+                <div class="ticket-form-group">
+                  <label class="config-input-label">Descrição do Espaço</label>
+                  <textarea id="espaco-camping-desc" class="ticket-textarea" required>Espaço nivelado e gramado, iluminação decorativa, fogueiras ao entardecer sob o céu estrelado e vestiários quentes 24 horas.</textarea>
+                </div>
+              </div>
+              <div>
+                <label class="config-input-label">Pré-visualização da Foto</label>
+                <img id="preview-camping" src="/sereia-dourada-site/assets/camping.jpg" alt="Preview Camping" class="config-img-preview" onerror="this.src="/sereia-dourada-site/assets/camping.jpg'">
+              </div>
+            </div>
+          </div>
+
+          <!-- Espaço 3: Restaurante -->
+          <div class="config-card-box">
+            <div class="config-card-box-header">
+              <h3 class="config-box-title">🍽️ Espaço 3: Mesa no Restaurante</h3>
+              <span class="badge-role-admin" style="font-size: 0.75rem; padding: 3px 10px;">ID: restaurante</span>
+            </div>
+            <div class="config-grid-2col">
+              <div>
+                <div class="ticket-form-group">
+                  <label class="config-input-label">Título do Espaço</label>
+                  <input type="text" id="espaco-restaurante-titulo" class="config-input" value="🍽️ Mesa no Restaurante" required>
+                </div>
+                <div class="ticket-form-group">
+                  <label class="config-input-label">URL da Foto / Imagem</label>
+                  <input type="text" id="espaco-restaurante-foto" class="config-input" value="assets/restaurante.jpg" oninput="atualizarPreview('espaco-restaurante-foto', 'preview-restaurante')" required>
+                </div>
+                <div class="ticket-form-group">
+                  <label class="config-input-label">Descrição do Espaço</label>
+                  <textarea id="espaco-restaurante-desc" class="ticket-textarea" required>Mesa exclusiva para almoços e jantares intimistas, menu autoral refinado, drinks artesanais e carta de vinhos selecionados.</textarea>
+                </div>
+              </div>
+              <div>
+                <label class="config-input-label">Pré-visualização da Foto</label>
+                <img id="preview-restaurante" src="/sereia-dourada-site/assets/restaurante.jpg" alt="Preview Restaurante" class="config-img-preview" onerror="this.src="/sereia-dourada-site/assets/restaurante.jpg'">
+              </div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+            <button type="submit" id="btn-save-espacos" class="btn-auth-register" style="padding: 13px 32px; font-size: 0.95rem;">
+              💾 Salvar Espaços da Reserva
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ================= ABA 2: CARDÁPIO DO RESTAURANTE ================= -->
+      <section id="tab-cardapio" class="config-tab-content" style="display: none;">
+        <div class="config-card-box">
+          <div class="config-card-box-header">
+            <div>
+              <h3 class="config-box-title">🍽️ Gestão de Pratos do Cardápio</h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">Adicione novos pratos, edite títulos, etiquetas ou descrições que aparecem em /cardapio.</p>
+            </div>
+            <button type="button" class="btn-admin-action btn-make-admin" onclick="abrirModalPrato()">
+              <span>＋</span> Adicionar Novo Prato
+            </button>
+          </div>
+
+          <div id="cardapio-loading" style="text-align: center; padding: 40px; color: var(--text-muted);">
+            Carregando pratos do cardápio...
+          </div>
+          <div id="lista-pratos-config" class="admin-cards-list" style="display: none;"></div>
+
+          <div style="display: flex; justify-content: flex-end; margin-top: 24px;">
+            <button type="button" id="btn-save-cardapio" onclick="salvarCardapioCompleto()" class="btn-auth-register" style="padding: 13px 32px; font-size: 0.95rem;">
+              💾 Salvar Cardápio Oficial
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= ABA 3: SUPORTE & WHATSAPP ================= -->
+      <section id="tab-suporte" class="config-tab-content" style="display: none;">
+        <div class="config-card-box">
+          <div class="config-card-box-header">
+            <h3 class="config-box-title">💬 Configuração de Atendimento & WhatsApp Oficial</h3>
+          </div>
+          <form id="form-config-suporte" onsubmit="salvarSuporte(event);" style="max-width: 600px;">
+            <div class="ticket-form-group">
+              <label class="config-input-label">Número de WhatsApp Oficial (com DDD e DDI)</label>
+              <input type="text" id="suporte-whatsapp-numero" class="config-input" value="5511998876655" placeholder="Ex: 5511998876655" required>
+              <small style="color: var(--text-muted); font-size: 0.78rem; display: block; margin-top: 4px;">
+                Digite apenas números com o código do país (ex: 55 para o Brasil) + DDD + Telefone. Este é o número que receberá os tickets abertos no site.
+              </small>
+            </div>
+
+            <div class="ticket-form-group">
+              <label class="config-input-label">Texto de Exibição / Horário de Atendimento</label>
+              <input type="text" id="suporte-horario" class="config-input" value="Atendimento Concierge 24 horas por dia">
+            </div>
+
+            <div style="display: flex; justify-content: flex-start; margin-top: 20px;">
+              <button type="submit" id="btn-save-suporte" class="btn-auth-register" style="padding: 13px 32px; font-size: 0.95rem;">
+                💾 Salvar Configurações de Suporte
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- ================= ABA 4: AVALIAÇÕES DOS CLIENTES ================= -->
+      <section id="tab-avaliacoes" class="config-tab-content" style="display: none;">
+        <div class="config-card-box">
+          <div class="config-card-box-header" style="flex-wrap: wrap;">
+            <div>
+              <h3 class="config-box-title">⭐ Gerenciamento de Avaliações Salvas</h3>
+              <p style="color: var(--text-muted); font-size: 0.88rem; margin-top: 4px;">
+                Depoimentos reais postados pelos clientes no site e sincronizados com a esteira do início.
+              </p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 14px; margin-top: 6px;">
+              <span class="badge-role-admin" id="badge-total-avaliacoes" style="font-size: 0.82rem; padding: 6px 14px;">
+                Total: 0 avaliações
+              </span>
+              <button type="button" class="btn-delete-review" id="btn-abrir-limpeza-avaliacoes" onclick="abrirModalConfirmLimpeza();" style="padding: 9px 18px; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px;">
+                <span>🗑️</span> Limpar Todas as Avaliações Salvas
+              </button>
+            </div>
+          </div>
+
+          <!-- Lista de Avaliações Salvas -->
+          <div id="container-avaliacoes-admin" style="margin-top: 20px;">
+            <div id="loading-avaliacoes-admin" style="text-align: center; padding: 40px; color: var(--text-muted);">
+              <div class="loading-spinner" style="margin: 0 auto 12px;"></div>
+              Carregando avaliações salvas no Firestore...
+            </div>
+            <div id="lista-avaliacoes-cards"></div>
+            <div id="empty-avaliacoes-admin" style="display: none; text-align: center; padding: 45px 20px; background: rgba(0,0,0,0.25); border-radius: 12px; border: 1px dashed rgba(212,175,55,0.25);">
+              <div style="font-size: 2.2rem; margin-bottom: 8px;">✨</div>
+              <h4 style="color: #FFFFFF; font-family: var(--font-serif); margin-bottom: 4px;">Nenhuma Avaliação Salva</h4>
+              <p style="color: var(--text-muted); font-size: 0.88rem;">
+                Quando novos clientes deixarem avaliações pelo botão do site, elas aparecerão listadas aqui para moderação ou exclusão.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Modal Confirmação de Limpeza de Avaliações -->
+  <div id="modal-confirm-limpeza" class="admin-modal-backdrop">
+    <div class="admin-modal-box" style="max-width: 480px;">
+      <div class="admin-modal-header">
+        <h3 class="admin-modal-title" style="color: #EF4444;">⚠️ Confirmar Exclusão Geral</h3>
+        <button onclick="fecharModalConfirmLimpeza()" class="admin-modal-close" type="button">&times;</button>
+      </div>
+      <div style="padding: 10px 0 20px;">
+        <p style="color: #CBD5E1; font-size: 0.95rem; line-height: 1.6; margin-bottom: 14px;">
+          Esta ação irá <strong>apagar permanentemente todas as avaliações salvas pelos clientes</strong> no banco de dados Firestore.
+        </p>
+        <p style="color: var(--gold-light); font-size: 0.85rem; line-height: 1.5; background: rgba(212,175,55,0.1); padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(212,175,55,0.25);">
+          ✦ <strong>Observação:</strong> A esteira na página inicial voltará a exibir automaticamente os depoimentos selecionados padrão do resort, garantindo que o visual continue luxuoso e sem espaços em branco.
+        </p>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button type="button" onclick="fecharModalConfirmLimpeza()" class="btn-admin-action" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff;">
+          Cancelar
+        </button>
+        <button type="button" id="btn-executar-limpeza-avaliacoes" onclick="executarLimpezaTodasAvaliacoes()" class="btn-delete-review" style="padding: 10px 22px; font-size: 0.9rem;">
+          Sim, Limpar Todas as Avaliações
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Adicionar / Editar Prato -->
+  <div id="modal-prato" class="admin-modal-backdrop">
+    <div class="admin-modal-box">
+      <div class="admin-modal-header">
+        <h3 class="admin-modal-title" id="modal-prato-title">Cadastrar Novo Prato</h3>
+        <button id="btn-close-prato-modal" class="admin-modal-close" type="button">&times;</button>
+      </div>
+      <form id="form-prato" onsubmit="salvarItemPrato(event);">
+        <input type="hidden" id="prato-edit-index" value="-1">
+        <div class="ticket-form-group">
+          <label class="config-input-label">Categoria do Prato</label>
+          <select id="prato-categoria" class="ticket-select" required>
+            <option value="Entradas">✨ Entradas & Petiscos Especiais</option>
+            <option value="Principais">🍽️ Pratos Principais de Alta Culinária</option>
+            <option value="Sobremesas">🍨 Sobremesas Artesanais</option>
+            <option value="Bebidas">🍷 Bebidas & Drinks Nobres</option>
+          </select>
+        </div>
+        <div class="ticket-form-group">
+          <label class="config-input-label">Nome do Prato</label>
+          <input type="text" id="prato-nome" class="config-input" placeholder="Ex: Carpaccio Trufado" required>
+        </div>
+        <div class="ticket-form-group">
+          <label class="config-input-label">Etiqueta / Destaque</label>
+          <input type="text" id="prato-tag" class="config-input" placeholder="Ex: Chef Especial, Mais Pedido, Artesanal" value="Especial">
+        </div>
+        <div class="ticket-form-group">
+          <label class="config-input-label">Descrição Completa</label>
+          <textarea id="prato-desc" class="ticket-textarea" placeholder="Descreva os ingredientes e detalhes do prato..." required></textarea>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 14px;">
+          <button type="button" id="btn-cancel-prato" class="btn-admin-action" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); color: #fff;">Cancelar</button>
+          <button type="submit" class="btn-auth-register" style="padding: 10px 24px;">Salvar Prato</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Feedback Toast Notificação -->
+  <div id="config-toast" class="profile-toast" style="display: none;"></div>
+
+  <!-- Rodapé -->
+  <footer class="site-footer">
+    <div class="container footer-content">
+      <div class="footer-clean-wrapper">
+        <div class="brand-text">
+          <span class="brand-title-top gold-gradient-text">SEREIA</span>
+          <span class="brand-title-bottom gold-gradient-text">DOURADA</span>
+        </div>
+        <p class="footer-copy">© 2026 Sereia Dourada. Painel Administrativo de Configurações.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Firebase SDK Oficial & Configuração -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="/sereia-dourada-site/js/firebase-config.js?v=6"></script>
+  <script src="/sereia-dourada-site/js/app.js?v=6"></script>
+
+  <!-- Lógica do Painel de Configurações -->
+  <script>
+    let pratosCardapio = [];
+
+    // Pratos padrão como base inicial caso ainda não tenham sido personalizados
+    const pratosPadrao = [
+      { categoria: "Entradas", nome: "Carpaccio Trufado da Fazenda", tag: "Chef Especial", desc: "Finas lâminas de carne curada com azeite trufado de Modena, raspas de parmesão maturado 24 meses, alcaparras crocantes e torradas artesanais na manteiga de ervas." },
+      { categoria: "Entradas", nome: "Bruschettas Rústicas de Cogumelos", tag: "Artesanal", desc: "Pão rústico de fermentação lenta tostado na brasa, mix de cogumelos salteados no azeite extravirgem, fonduta cremosa de queijo brie e tomilho fresco." },
+      { categoria: "Entradas", nome: "Tábua Nobre Sereia Dourada", tag: "Para Compartilhar", desc: "Seleção de queijos nobres da serra, charcutaria artesanal selecionada, castanhas tostadas, favo de mel puro e geleia de frutas vermelhas nativas." },
+      { categoria: "Principais", nome: "Filé Mignon ao Vinho & Aligot da Serra", tag: "Mais Pedido", desc: "Medalhão alto grelhado ao ponto desejado, glaceado em redução de vinho tinto encorpado com especiarias, servido sobre aveludado aligot elástico de queijos da região." },
+      { categoria: "Principais", nome: "Risoto de Cogumelos Selvagens com Trufas", tag: "Autoral", desc: "Arroz arbóreo preparado com caldo aromático artesanal, mix de shiitake, shimeji e cogumelos Paris salteados, finalizado com manteiga da fazenda e queijo nobre." },
+      { categoria: "Principais", nome: "Salmão Dourado em Crosta de Castanhas", tag: "Especial", desc: "Lombo de salmão grelhado com crosta crocante de castanhas e ervas aromáticas, acompanhado de purê de mandioquinha defumada e legumes grelhados na brasa." }
+    ];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      iniciarPainelConfig();
+      configurarNavegacaoAbas();
+      configurarModalPrato();
+    });
+
+    function iniciarPainelConfig() {
+      const authLoading = document.getElementById('config-auth-loading');
+      const authGuard = document.getElementById('config-auth-guard');
+      const deniedMessage = document.getElementById('config-denied-message');
+      const dashboardContent = document.getElementById('config-dashboard-content');
+
+      if (typeof firebase === 'undefined' || !firebase.auth) {
+        setTimeout(iniciarPainelConfig, 250);
+        return;
+      }
+
+      firebase.auth().onAuthStateChanged(async (user) => {
+        if (!user) {
+          authLoading.style.display = 'none';
+          authGuard.style.display = 'block';
+          dashboardContent.style.display = 'none';
+          return;
+        }
+
+        let perfilDoc = null;
+        if (window.obterPerfilUsuarioVIP) {
+          try { perfilDoc = await window.obterPerfilUsuarioVIP(user.uid); } catch(e) {}
+        }
+
+        const isAdm = typeof window.verificarUsuarioAdmin === 'function'
+          ? window.verificarUsuarioAdmin(user, perfilDoc)
+          : (perfilDoc && (perfilDoc.isAdmin === true || perfilDoc.perfil === 'admin' || perfilDoc.role === 'admin')) ||
+            (localStorage.getItem('sereia_admin_' + user.uid) === 'true');
+
+        if (!isAdm) {
+          authLoading.style.display = 'none';
+          authGuard.style.display = 'block';
+          dashboardContent.style.display = 'none';
+          if (deniedMessage) {
+            deniedMessage.innerHTML = `Sua conta atual (<strong>${escapeHtml(user.email || '')}</strong>) não possui privilégios administrativos.`;
+          }
+          return;
+        }
+
+        authLoading.style.display = 'none';
+        authGuard.style.display = 'none';
+        dashboardContent.style.display = 'block';
+
+        carregarDadosConfiguracoes();
+      });
+    }
+
+    function configurarNavegacaoAbas() {
+      const btns = document.querySelectorAll('.config-tab-btn');
+      const contents = document.querySelectorAll('.config-tab-content');
+
+      btns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          btns.forEach(b => b.classList.remove('active'));
+          contents.forEach(c => c.style.display = 'none');
+
+          btn.classList.add('active');
+          const targetId = btn.getAttribute('data-tab');
+          const targetContent = document.getElementById(targetId);
+          if (targetContent) targetContent.style.display = 'block';
+        });
+      });
+    }
+
+    function atualizarPreview(inputId, imgId) {
+      const input = document.getElementById(inputId);
+      const img = document.getElementById(imgId);
+      if (input && img) {
+        img.src = input.value.trim() || '';
+      }
+    }
+
+    async function carregarDadosConfiguracoes() {
+      if (typeof window.obterConfiguracoes !== 'function') return;
+
+      // 1. Carrega Espaços
+      const espacos = await window.obterConfiguracoes('espacos');
+      if (espacos) {
+        if (espacos.pousada) {
+          document.getElementById('espaco-pousada-titulo').value = espacos.pousada.titulo || '';
+          document.getElementById('espaco-pousada-foto').value = espacos.pousada.foto || '';
+          document.getElementById('espaco-pousada-desc').value = espacos.pousada.desc || '';
+          document.getElementById('preview-pousada').src = espacos.pousada.foto || 'assets/pousada.jpg';
+        }
+        if (espacos.camping) {
+          document.getElementById('espaco-camping-titulo').value = espacos.camping.titulo || '';
+          document.getElementById('espaco-camping-foto').value = espacos.camping.foto || '';
+          document.getElementById('espaco-camping-desc').value = espacos.camping.desc || '';
+          document.getElementById('preview-camping').src = espacos.camping.foto || 'assets/camping.jpg';
+        }
+        if (espacos.restaurante) {
+          document.getElementById('espaco-restaurante-titulo').value = espacos.restaurante.titulo || '';
+          document.getElementById('espaco-restaurante-foto').value = espacos.restaurante.foto || '';
+          document.getElementById('espaco-restaurante-desc').value = espacos.restaurante.desc || '';
+          document.getElementById('preview-restaurante').src = espacos.restaurante.foto || 'assets/restaurante.jpg';
+        }
+      }
+
+      // 2. Carrega Cardápio
+      const cardapioData = await window.obterConfiguracoes('cardapio');
+      if (cardapioData && Array.isArray(cardapioData.pratos) && cardapioData.pratos.length > 0) {
+        pratosCardapio = cardapioData.pratos;
+      } else {
+        pratosCardapio = [...pratosPadrao];
+      }
+      renderizarPratosConfig();
+
+      // 3. Carrega Suporte
+      const suporteData = await window.obterConfiguracoes('suporte');
+      if (suporteData) {
+        if (suporteData.whatsapp) document.getElementById('suporte-whatsapp-numero').value = suporteData.whatsapp;
+        if (suporteData.horario) document.getElementById('suporte-horario').value = suporteData.horario;
+      }
+    }
+
+    // Salvar Espaços
+    window.salvarEspacos = async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-save-espacos');
+      btn.disabled = true;
+      btn.textContent = "Salvando Espaços...";
+
+      const dados = {
+        pousada: {
+          titulo: document.getElementById('espaco-pousada-titulo').value.trim(),
+          foto: document.getElementById('espaco-pousada-foto').value.trim(),
+          desc: document.getElementById('espaco-pousada-desc').value.trim()
+        },
+        camping: {
+          titulo: document.getElementById('espaco-camping-titulo').value.trim(),
+          foto: document.getElementById('espaco-camping-foto').value.trim(),
+          desc: document.getElementById('espaco-camping-desc').value.trim()
+        },
+        restaurante: {
+          titulo: document.getElementById('espaco-restaurante-titulo').value.trim(),
+          foto: document.getElementById('espaco-restaurante-foto').value.trim(),
+          desc: document.getElementById('espaco-restaurante-desc').value.trim()
+        }
+      };
+
+      try {
+        await window.salvarConfiguracoes('espacos', dados);
+        mostrarToast("✦ Espaços da Reserva atualizados com sucesso!");
+      } catch(err) {
+        mostrarToast("Erro ao salvar: " + err.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "💾 Salvar Espaços da Reserva";
+      }
+    };
+
+    // Salvar Suporte
+    window.salvarSuporte = async function(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btn-save-suporte');
+      btn.disabled = true;
+      btn.textContent = "Salvando...";
+
+      const whats = document.getElementById('suporte-whatsapp-numero').value.replace(/\D/g, '');
+      const horario = document.getElementById('suporte-horario').value.trim();
+
+      try {
+        await window.salvarConfiguracoes('suporte', {
+          whatsapp: whats,
+          horario: horario
+        });
+        mostrarToast("✦ Configurações de Suporte salvas com sucesso!");
+      } catch(err) {
+        mostrarToast("Erro ao salvar: " + err.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "💾 Salvar Configurações de Suporte";
+      }
+    };
+
+    // Renderizar Pratos
+    function renderizarPratosConfig() {
+      const loadingEl = document.getElementById('cardapio-loading');
+      const listEl = document.getElementById('lista-pratos-config');
+      if (loadingEl) loadingEl.style.display = 'none';
+      if (!listEl) return;
+
+      listEl.style.display = 'flex';
+      listEl.innerHTML = pratosCardapio.map((p, idx) => {
+        return `
+          <div class="admin-reserva-card" style="padding: 18px 22px;">
+            <div class="admin-card-top" style="margin-bottom: 8px;">
+              <div>
+                <span class="badge-role-admin" style="font-size: 0.7rem; padding: 2px 8px; margin-bottom: 4px; display: inline-block;">${escapeHtml(p.categoria || 'Geral')}</span>
+                <h4 style="font-family: var(--font-serif); color: #fff; font-size: 1.1rem; margin-top: 2px;">${escapeHtml(p.nome)}</h4>
+                <span style="color: var(--gold-light); font-size: 0.78rem; font-weight: 700;">★ ${escapeHtml(p.tag || 'Especial')}</span>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-admin-action btn-edit-user" onclick="editarPrato(${idx})" style="padding: 6px 14px; font-size: 0.75rem;">
+                  ✏️ Editar
+                </button>
+                <button type="button" class="btn-admin-action btn-make-client" onclick="removerPrato(${idx})" style="padding: 6px 14px; font-size: 0.75rem;">
+                  🗑️ Remover
+                </button>
+              </div>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.5; margin: 0;">${escapeHtml(p.desc)}</p>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Modal Prato
+    function configurarModalPrato() {
+      const modal = document.getElementById('modal-prato');
+      const btnClose = document.getElementById('btn-close-prato-modal');
+      const btnCancel = document.getElementById('btn-cancel-prato');
+
+      if (btnClose) btnClose.onclick = () => modal.classList.remove('active');
+      if (btnCancel) btnCancel.onclick = () => modal.classList.remove('active');
+    }
+
+    window.abrirModalPrato = function() {
+      document.getElementById('prato-edit-index').value = "-1";
+      document.getElementById('modal-prato-title').textContent = "Cadastrar Novo Prato";
+      document.getElementById('prato-nome').value = '';
+      document.getElementById('prato-tag').value = 'Especial';
+      document.getElementById('prato-desc').value = '';
+      document.getElementById('modal-prato').classList.add('active');
+    };
+
+    window.editarPrato = function(idx) {
+      const p = pratosCardapio[idx];
+      if (!p) return;
+      document.getElementById('prato-edit-index').value = idx;
+      document.getElementById('modal-prato-title').textContent = "Editar Prato";
+      document.getElementById('prato-categoria').value = p.categoria || 'Principais';
+      document.getElementById('prato-nome').value = p.nome || '';
+      document.getElementById('prato-tag').value = p.tag || 'Especial';
+      document.getElementById('prato-desc').value = p.desc || '';
+      document.getElementById('modal-prato').classList.add('active');
+    };
+
+    window.removerPrato = function(idx) {
+      if (!confirm("Deseja realmente remover este prato do cardápio?")) return;
+      pratosCardapio.splice(idx, 1);
+      renderizarPratosConfig();
+      mostrarToast("Prato removido da lista temporária. Clique em 'Salvar Cardápio Oficial' para confirmar.");
+    };
+
+    window.salvarItemPrato = function(e) {
+      e.preventDefault();
+      const idx = parseInt(document.getElementById('prato-edit-index').value);
+      const prato = {
+        categoria: document.getElementById('prato-categoria').value,
+        nome: document.getElementById('prato-nome').value.trim(),
+        tag: document.getElementById('prato-tag').value.trim() || 'Especial',
+        desc: document.getElementById('prato-desc').value.trim()
+      };
+
+      if (idx >= 0) {
+        pratosCardapio[idx] = prato;
+      } else {
+        pratosCardapio.push(prato);
+      }
+
+      document.getElementById('modal-prato').classList.remove('active');
+      renderizarPratosConfig();
+      mostrarToast("Prato atualizado na lista! Lembre-se de clicar em 'Salvar Cardápio Oficial'.");
+    };
+
+    window.salvarCardapioCompleto = async function() {
+      const btn = document.getElementById('btn-save-cardapio');
+      btn.disabled = true;
+      btn.textContent = "Salvando no Firestore...";
+
+      try {
+        await window.salvarConfiguracoes('cardapio', { pratos: pratosCardapio });
+        mostrarToast("✦ Cardápio Oficial publicado com sucesso!");
+      } catch(err) {
+        mostrarToast("Erro ao salvar cardápio: " + err.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "💾 Salvar Cardápio Oficial";
+      }
+    };
+
+    function mostrarToast(msg, tipo = 'success') {
+      const t = document.getElementById('config-toast');
+      if (!t) return;
+      t.textContent = msg;
+      t.className = 'profile-toast ' + (tipo === 'error' ? 'toast-error' : '');
+      t.style.display = 'block';
+      setTimeout(() => { t.style.display = 'none'; }, 3500);
+    }
+
+    // =========================================================================
+    // GERENCIAMENTO DE AVALIAÇÕES NO PAINEL ADMINISTRATIVO
+    // =========================================================================
+    let avaliacoesSalvasCache = [];
+
+    function iniciarEscutaAvaliacoesAdmin() {
+      if (typeof window.escutarTodasAvaliacoes !== 'function') {
+        setTimeout(iniciarEscutaAvaliacoesAdmin, 300);
+        return;
+      }
+
+      window.escutarTodasAvaliacoes((avaliacoes) => {
+        avaliacoesSalvasCache = avaliacoes || [];
+        renderizarAvaliacoesAdmin(avaliacoesSalvasCache);
+      });
+    }
+
+    function renderizarAvaliacoesAdmin(lista) {
+      const loading = document.getElementById('loading-avaliacoes-admin');
+      const empty = document.getElementById('empty-avaliacoes-admin');
+      const container = document.getElementById('lista-avaliacoes-cards');
+      const badgeCount = document.getElementById('badge-total-avaliacoes');
+
+      if (loading) loading.style.display = 'none';
+      if (badgeCount) badgeCount.textContent = `Total: ${lista.length} avaliação(ões)`;
+
+      if (!lista || lista.length === 0) {
+        if (empty) empty.style.display = 'block';
+        if (container) container.innerHTML = '';
+        return;
+      }
+
+      if (empty) empty.style.display = 'none';
+      if (!container) return;
+
+      container.innerHTML = lista.map(item => {
+        const estrelasNum = Math.max(1, Math.min(5, parseInt(item.estrelas) || 5));
+        const estrelasStr = "★".repeat(estrelasNum);
+        const safeFoto = item.foto && item.foto.startsWith('http') ? item.foto : '';
+        const avatarHtml = safeFoto 
+          ? `<img src="${safeFoto}" alt="Avatar" onerror="this.parentElement.innerHTML='👑';">` 
+          : '👑';
+        
+        let dataFormatada = 'Data recente';
+        if (item.criadoEm && item.criadoEm.toDate) {
+          dataFormatada = item.criadoEm.toDate().toLocaleString('pt-BR');
+        }
+
+        return `
+          <div class="admin-review-card" id="admin-review-${item.id}">
+            <div class="admin-review-avatar-wrap">
+              ${avatarHtml}
+            </div>
+            <div class="admin-review-content">
+              <div class="admin-review-header">
+                <span class="admin-review-author">${escapeHtml(item.nome || 'Anônimo')}</span>
+                <span class="admin-review-space">${escapeHtml(item.espaco || 'Geral')}</span>
+                <span class="admin-review-space" style="color: var(--text-secondary); border-color: rgba(255,255,255,0.1);">${escapeHtml(item.badge || 'VIP')}</span>
+                <span class="admin-review-stars">${estrelasStr}</span>
+              </div>
+              <p class="admin-review-text">"${escapeHtml(item.comentario || '')}"</p>
+              <span class="admin-review-date">Postado em: ${dataFormatada}</span>
+            </div>
+            <button type="button" class="btn-delete-review" onclick="removerAvaliacaoUnica('${item.id}')" title="Excluir esta avaliação">
+              🗑️ Excluir
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.abrirModalConfirmLimpeza = function() {
+      const modal = document.getElementById('modal-confirm-limpeza');
+      if (modal) modal.classList.add('active');
+    };
+
+    window.fecharModalConfirmLimpeza = function() {
+      const modal = document.getElementById('modal-confirm-limpeza');
+      if (modal) modal.classList.remove('active');
+    };
+
+    window.executarLimpezaTodasAvaliacoes = async function() {
+      const btn = document.getElementById('btn-executar-limpeza-avaliacoes');
+      const origText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Excluindo todas...";
+
+      try {
+        if (typeof window.limparTodasAvaliacoes !== 'function') {
+          throw new Error("Módulo de limpeza não carregado.");
+        }
+        await window.limparTodasAvaliacoes();
+        fecharModalConfirmLimpeza();
+        mostrarToast("✦ Todas as avaliações salvas foram excluídas com sucesso!");
+      } catch(err) {
+        alert("Erro ao limpar avaliações: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = origText;
+      }
+    };
+
+    window.removerAvaliacaoUnica = async function(id) {
+      if (!confirm("Tem certeza que deseja excluir esta avaliação de forma definitiva?")) return;
+      try {
+        if (typeof window.removerAvaliacao !== 'function') {
+          throw new Error("Módulo de exclusão não carregado.");
+        }
+        await window.removerAvaliacao(id);
+        mostrarToast("✦ Avaliação excluída do Firestore com sucesso!");
+      } catch(err) {
+        alert("Erro ao excluir avaliação: " + err.message);
+      }
+    };
+
+    // Inicializa escuta de avaliações quando o painel for liberado
+    const originalCarregarDados = carregarDadosConfiguracoes;
+    carregarDadosConfiguracoes = function() {
+      if (typeof originalCarregarDados === 'function') originalCarregarDados();
+      iniciarEscutaAvaliacoesAdmin();
+    };
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+
+</html>

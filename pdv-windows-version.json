@@ -1,0 +1,6 @@
+{
+  "version": "1.0.3",
+  "releaseNotes": "PDV-Loja Windows v1.0.3 (.exe): sincronização em tempo real de produtos (Estoque/Card dos Produtos) e pedidos das mesas com o APK do Funcionário, exibindo Nome do Funcionário, Mesa, Valor e Comissão ao vivo.",
+  "downloadUrl": "https://github.com/LoboEclipse/sereia-dourada-site/releases/tag/pdv-win-v1.0.3",
+  "exeUrl": "https://github.com/LoboEclipse/sereia-dourada-site/releases/download/pdv-win-v1.0.3/SereiaDourada-PDV-Setup-1.0.3.exe"
+}
